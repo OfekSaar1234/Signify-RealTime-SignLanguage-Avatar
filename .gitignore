@@ -1,0 +1,31 @@
+# --- Python & System Garbage ---
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+.venv
+venv/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Media Files (Too Heavy for GitHub) ---
+# We ignore raw videos to keep the repo light
+*.mp4
+*.avi
+*.mov
+
+# --- Unity Generated (Future Proofing) ---
+# When you add the Unity project later, these folders are auto-generated
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# --- Documentation ---
+# Keep the PDF/Word docs, but ignore temporary office files
+~$*.doc*
