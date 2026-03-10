@@ -126,5 +126,5 @@ if __name__ == "__main__":
     # Example usage:
     tool = DictionaryBuilder()
     
-    # Replace "hello" with the name of the MP4 file you want to convert
-    tool.process_video_to_json("sea")
+    # Replace "" with the name of the MP4 file you want to convert
+    tool.process_video_to_json("howareyou")

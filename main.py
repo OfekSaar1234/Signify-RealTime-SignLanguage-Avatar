@@ -8,7 +8,7 @@ PURPOSE: The Application Controller (The Player).
          2. Smooths transitions between frames using Linear Interpolation (Lerp).
          3. Sends data to the AvatarDrawer for rendering.
          4. Handles user input (Quit).
-==============================================================================
+=============================================================================
 """
 import cv2
 import json
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     # === PLAYLIST CONFIGURATION ===
     # Ensure these words exist in your assets folder as .json files!
     # If "word.json" is missing, remove it from this list.
-    playlist = ["hello","sea"] 
+    playlist = ["sea"] 
     
     player.play_sentence(playlist)
     
