@@ -11,9 +11,6 @@ PURPOSE: The "Data Factory".
 ==============================================================================
 """
 
-"""
-ToDo: We will add a "Motion Threshold Algorithm":
-"""
 import cv2
 import mediapipe as mp
 import json
@@ -102,8 +99,6 @@ class DictionaryBuilder:
             ai_results = self.ai_model.process(image_rgb)
             
             # Extract and organize the data for this specific frame
-            # keys: 'f' (face), 'p' (pose), 'l' (left hand), 'r' (right hand)
-            # We use short keys to keep the JSON file size small.
             current_frame_data = {
                 "f": self.convert_landmarks_to_list(ai_results.face_landmarks, apply_face_filter=True),
                 "p": self.convert_landmarks_to_list(ai_results.pose_landmarks),
@@ -116,15 +111,56 @@ class DictionaryBuilder:
         video_capture.release()
         
         # Save the list to a JSON file
-        # 'separators' removes spaces to make the file as small as possible
         with open(json_output_path, 'w') as json_file:
             json.dump(full_animation_data, json_file, separators=(',', ':'))
             
         print(f"[SUCCESS] Data saved to: {json_output_path}")
 
+# =======================================================================
+# EXECUTION BLOCK: AUTOMATIC BATCH PROCESSING
+# =======================================================================
 if __name__ == "__main__":
-    # Example usage:
     tool = DictionaryBuilder()
     
-    # Replace "" with the name of the MP4 file you want to convert
-    tool.process_video_to_json("howareyou")
+    # The exact 25 words needed for our 10 Test Phrases
+    words_to_process = [
+        "today", "sea", "beautiful", "tomorrow", "i", "going", 
+        "yesterday", "saw", "bird", "now", "you", "work", 
+        "morning", "cold", "night", "will", "sleep", "later", 
+        "see", "fly", "tree", "happy", "soon", "he", "home"
+    ]
+    
+    # We will keep track of missing files here
+    missing_mp4s = []
+    
+    print(f"[SYSTEM] Starting batch processing of {len(words_to_process)} words...")
+    
+    for word in words_to_process:
+        video_path = f"assets/{word}.mp4"
+        json_path = f"assets/{word}.json"
+        
+        # 1. SMART CHECK: Does the JSON already exist?
+        if os.path.exists(json_path):
+            print(f"[SKIP] '{word}.json' already exists. Saving time!")
+            continue 
+            
+        # 2. SAFETY CHECK: Make sure you actually moved the MP4 to the assets folder
+        if os.path.exists(video_path):
+            tool.process_video_to_json(word)
+        else:
+            print(f"[WARNING] Skipping '{word}': Could not find {video_path}")
+            missing_mp4s.append(word)  # Add the missing word to our report list
+            
+    print("\n[SYSTEM] Batch processing complete! Your Dictionary is ready.")
+    
+    # 3. PRINT THE SUMMARY REPORT
+    if missing_mp4s:
+        print("\n=========================================")
+        print("🚨 SUMMARY: MISSING MP4 FILES 🚨")
+        print("=========================================")
+        print(f"You are missing {len(missing_mp4s)} video(s). Please download them into the 'assets' folder:")
+        for missing in missing_mp4s:
+            print(f" - {missing}.mp4")
+        print("=========================================")
+    else:
+        print("\n[SUCCESS] All 25 words have been successfully processed or skipped! You are ready to run main.py!")

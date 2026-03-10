@@ -2,148 +2,178 @@
 ==============================================================================
 PROJECT: Signify - Sign Language Translation Avatar
 MODULE:  main.py
-PURPOSE: The Application Controller (The Player).
-         This script manages the runtime execution:
-         1. Loads the lightweight JSON data.
-         2. Smooths transitions between frames using Linear Interpolation (Lerp).
-         3. Sends data to the AvatarDrawer for rendering.
-         4. Handles user input (Quit).
+PURPOSE: The Continuous Application Controller.
+         Uses Multithreading and a Queue to run the Avatar smoothly while 
+         simultaneously receiving and translating text from the user live.
+         *SPEED UPGRADED FOR REAL-TIME ASL FLUENCY*
 =============================================================================
 """
+
+"""simulated_speech = [
+        "The sea is beautiful today",
+        "I am going to the sea tomorrow",
+        "Yesterday I saw a beautiful bird",
+        "Are you going to work now",
+        "The morning is cold",
+        "I will sleep at night",
+        "See you later",
+        "The bird will fly to the tree",
+        "I am happy today",
+        "He is going home soon"
+    ]"""
+
 import cv2
 import json
 import os
 import numpy as np
+import threading
+import queue
+import time
+
+# Import our custom modules
 from avatar_drawer import AvatarDrawer
+from asl_translator import ASLTranslator
+
+# --- THE SHARED QUEUE ---
+phrase_queue = queue.Queue()
 
 class SignLanguagePlayer:
     def __init__(self):
-        """
-        Initializes the player, the renderer, and the memory buffer for the screen.
-        """
-        # Instance of our drawing engine (from avatar_drawer.py)
         self.avatar_renderer = AvatarDrawer()
-        
-        # Pre-allocate a black blank image (HD Resolution: 1280x720)
-        # We use uint8 because images are 8-bit (0-255) integers.
         self.display_canvas = np.zeros((720, 1280, 3), dtype=np.uint8)
+        self.last_frame_data = None
+        self.is_running = True
+        
+        # --- SPEED CONTROLS ---
+        # 33 = ~30 FPS (Normal/Slow)
+        # 16 = ~60 FPS (Fast/Smooth)
+        # 10 = ~100 FPS (Lightning fast)
+        self.playback_speed_ms = 15 
+        
+        # How many frames to use for the "bridge" between words. 
+        # Lower = snappier/faster. Higher = smoother but slower.
+        self.transition_frames = 4 
 
     def calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
-        """
-        Mathematically calculates an "in-between" frame to smooth movement.
-        Formula: Result = Start + (End - Start) * Factor
-
-        :param start_frame: The data of the starting pose (dict).
-        :param end_frame: The data of the target pose (dict).
-        :param interpolation_factor: A float between 0.0 and 1.0 (0% to 100% progress).
-        :return: A new dictionary containing the calculated coordinates.
-        """
         interpolated_result = {}
-        
-        # Loop through all body parts: f (Face), p (Pose), l (Left), r (Right)
         for key in ["f", "p", "l", "r"]:
-            # Get points from both frames (handle cases where a hand might be missing in one)
             points_a = start_frame.get(key, [])
             points_b = end_frame.get(key, [])
             
-            # If one frame is missing data, we cannot smooth it, so we just snap to the target.
             if not points_a or not points_b: 
                 interpolated_result[key] = points_b if points_b else points_a
                 continue
             
-            # The Math: Iterate through every point (x, y, z) and calculate the weighted average.
-            # zip(points_a, points_b) pairs the points together (Point 1 with Point 1, etc.)
             smoothed_points = []
             for point_a, point_b in zip(points_a, points_b):
-                # Apply Lerp formula to X, Y, and Z
-                new_coords = [
-                    point_a[i] + (point_b[i] - point_a[i]) * interpolation_factor 
-                    for i in range(3)
-                ]
+                new_coords = [point_a[i] + (point_b[i] - point_a[i]) * interpolation_factor for i in range(3)]
                 smoothed_points.append(new_coords)
                 
             interpolated_result[key] = smoothed_points
-            
         return interpolated_result
 
-    def play_sentence(self, words_list: list) -> None:
-        """
-        Iterates through a list of words, loads their files, and plays them in sequence.
-
-        :param words_list: A list of strings representing filenames (e.g., ["hello", "thank_you"]).
-        """
-        last_frame_data = None
+    def play_single_word(self, word: str) -> None:
+        file_path = f"assets/{word.lower()}.json"
         
-        for word in words_list:
-            file_path = f"assets/{word}.json"
-            
-            # Error Handling: Skip words that haven't been processed by the builder yet
-            if not os.path.exists(file_path):
-                print(f"[ERROR] File not found: {file_path}. Skipping.")
-                continue
+        if not os.path.exists(file_path):
+            print(f"[PLAYER WARNING] Missing animation file for: {word}. Skipping.")
+            return
 
-            # Load the JSON data
-            with open(file_path, 'r') as f:
-                animation_sequence = json.load(f)
-            
-            # --- PHASE 1: TRANSITION (The Bridge) ---
-            # If we just finished a word, we need to smooth the jump to the new word.
-            # We generate 10 artificial frames to blend the end of Word A to the start of Word B.
-            if last_frame_data is not None:
-                first_frame_of_new_word = animation_sequence[0]
-                for i in range(1, 11):
-                    # i / 10 gives us steps: 0.1, 0.2, ... 1.0
-                    blend_frame = self.calculate_smooth_frame(
-                        last_frame_data, first_frame_of_new_word, i / 10
-                    )
-                    self.render_to_screen(blend_frame, f"Transitioning...")
+        with open(file_path, 'r') as f:
+            animation_sequence = json.load(f)
+        
+        # --- PHASE 1: TRANSITION (Faster & Snappier) ---
+        if self.last_frame_data is not None:
+            first_frame_of_new_word = animation_sequence[0]
+            for i in range(1, self.transition_frames + 1):
+                # Calculate the percentage of the transition (e.g., 1/4, 2/4, 3/4)
+                blend_factor = i / float(self.transition_frames)
+                blend_frame = self.calculate_smooth_frame(self.last_frame_data, first_frame_of_new_word, blend_factor)
+                self.render_to_screen(blend_frame, f"Transitioning...")
 
-            # --- PHASE 2: PLAYBACK ---
-            # Play the actual frames of the current word
-            for frame_data in animation_sequence:
-                self.render_to_screen(frame_data, f"Signing: {word.upper()}")
-                last_frame_data = frame_data # Save this frame to start the next transition
+        # --- PHASE 2: PLAYBACK (High Speed) ---
+        for frame_data in animation_sequence:
+            self.render_to_screen(frame_data, f"Signing: {word.upper()}")
+            self.last_frame_data = frame_data 
+            
+            if cv2.waitKey(self.playback_speed_ms) & 0xFF == ord('q'): 
+                self.is_running = False
+                return
+
+    def continuous_play_loop(self):
+        print("[PLAYER] Avatar Engine running. Waiting for incoming speech...")
+        
+        while self.is_running:
+            if not phrase_queue.empty():
+                sentence_glosses = phrase_queue.get() 
                 
-                # Check for 'q' key to quit immediately
-                if cv2.waitKey(33) & 0xFF == ord('q'): 
-                    return
+                print(f"\n[PLAYER] Received new ASL sequence: {sentence_glosses}")
+                for word in sentence_glosses:
+                    self.play_single_word(word)
+                    if not self.is_running: break
+            else:
+                if self.last_frame_data:
+                    self.render_to_screen(self.last_frame_data, "Waiting for speech...")
+                else:
+                    self.display_canvas.fill(0)
+                    cv2.putText(self.display_canvas, "Waiting for speech...", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.imshow("Signify - Continuous Player", self.display_canvas)
+                    
+                    if cv2.waitKey(33) & 0xFF == ord('q'):
+                        self.is_running = False
 
     def render_to_screen(self, frame_data: dict, ui_label: str) -> None:
-        """
-        Updates the canvas with the new frame and displays it.
-
-        :param frame_data: The dictionary of coordinates to draw.
-        :param ui_label: Text string to display on top of the screen (GUI).
-        """
-        # 1. Clear the screen (fill with black) to remove the previous frame
         self.display_canvas.fill(0)
-        
-        # 2. Ask the Renderer (AvatarDrawer) to draw the dots
         self.avatar_renderer.draw_frame(self.display_canvas, frame_data)
+        cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        cv2.imshow("Signify - Continuous Player", self.display_canvas)
         
-        # 3. Add the text label (Green text)
-        cv2.putText(
-            self.display_canvas, ui_label, (50, 50), 
-            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2
-        )
-        
-        # 4. Refresh the window
-        cv2.imshow("Signify - Final Player", self.display_canvas)
-        
-        # Tiny pause (1ms) to allow the OS to draw the window
+        # We wait 1ms here so OpenCV draws, but the REAL delay is controlled in play_single_word
         cv2.waitKey(1)
 
+# =======================================================================
+# BACKGROUND THREAD: THE LIVE INPUT SIMULATOR
+# =======================================================================
+def live_typing_stream():
+    translator = ASLTranslator()
+    time.sleep(2) 
+    
+    print("\n" + "="*50)
+    print("🎙️ LIVE INPUT MODE ACTIVATED 🎙️")
+    print("Type an English sentence in the terminal and press ENTER.")
+    print("To quit, click the video window and press 'q'.")
+    print("="*50 + "\n")
+    
+    while player.is_running:
+        try:
+            user_text = input("Type a sentence: ")
+            
+            if not user_text.strip():
+                continue
+                
+            print(f"\n[MIC] You typed: '{user_text}'")
+            
+            asl_glosses = translator.text_to_gloss(user_text)
+            print(f"[BRAIN] Translated to ASL: {asl_glosses}")
+            
+            phrase_queue.put(asl_glosses)
+            
+        except EOFError:
+            break
+
+# =======================================================================
+# APPLICATION ENTRY POINT
+# =======================================================================
 if __name__ == "__main__":
     player = SignLanguagePlayer()
     
-    print("[SYSTEM] Starting Signify Player...")
-    print("[SYSTEM] Press 'q' at any time to quit.")
+    print("[SYSTEM] Booting up Signify Architecture...")
+    print("[SYSTEM] Press 'q' on the video window to quit.")
     
-    # === PLAYLIST CONFIGURATION ===
-    # Ensure these words exist in your assets folder as .json files!
-    # If "word.json" is missing, remove it from this list.
-    playlist = ["sea"] 
+    api_thread = threading.Thread(target=live_typing_stream, daemon=True)
+    api_thread.start()
     
-    player.play_sentence(playlist)
+    player.continuous_play_loop()
     
     cv2.destroyAllWindows()
+    print("[SYSTEM] Application closed cleanly.")
