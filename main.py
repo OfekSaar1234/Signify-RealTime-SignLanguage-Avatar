@@ -5,8 +5,8 @@ MODULE:  main.py
 PURPOSE: The Continuous Application Controller.
          Uses Multithreading and a Queue to run the Avatar smoothly while 
          simultaneously receiving and translating text from the user live.
-         *SPEED UPGRADED FOR REAL-TIME ASL FLUENCY*
-=============================================================================
+         *SPEED UPGRADED FOR REAL-TIME ASL FLUENCY & NEW DIRECTORY STRUCTURE*
+==============================================================================
 """
 
 """simulated_speech = [
@@ -39,22 +39,31 @@ phrase_queue = queue.Queue()
 
 class SignLanguagePlayer:
     def __init__(self):
+        """
+        Initializes the Sign Language Player. 
+        Sets up the drawing canvas, rendering engine, and controls playback speeds.
+        """
         self.avatar_renderer = AvatarDrawer()
         self.display_canvas = np.zeros((720, 1280, 3), dtype=np.uint8)
         self.last_frame_data = None
         self.is_running = True
         
         # --- SPEED CONTROLS ---
-        # 33 = ~30 FPS (Normal/Slow)
-        # 16 = ~60 FPS (Fast/Smooth)
-        # 10 = ~100 FPS (Lightning fast)
         self.playback_speed_ms = 15 
         
         # How many frames to use for the "bridge" between words. 
-        # Lower = snappier/faster. Higher = smoother but slower.
-        self.transition_frames = 4 
+        # Lower (1-2) = snappier/faster. Higher (4+) = smoother but slower.
+        self.transition_frames = 2 
 
     def calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
+        """
+        Calculates an intermediate frame between two given frames to create a smooth visual transition.
+        
+        :param start_frame: The data of the ending frame of the previous word.
+        :param end_frame: The data of the starting frame of the new word.
+        :param interpolation_factor: A float between 0.0 and 1.0 indicating the transition progress.
+        :return: A dictionary representing the interpolated frame data.
+        """
         interpolated_result = {}
         for key in ["f", "p", "l", "r"]:
             points_a = start_frame.get(key, [])
@@ -73,7 +82,14 @@ class SignLanguagePlayer:
         return interpolated_result
 
     def play_single_word(self, word: str) -> None:
-        file_path = f"assets/{word.lower()}.json"
+        """
+        Loads the JSON animation file for a single word and plays it on the canvas, 
+        including generating the smooth transition frames if necessary.
+        
+        :param word: The ASL gloss word to be animated.
+        """
+        # UPDATED PATH: Looking inside the new jsons folder
+        file_path = f"assets/jsons/{word.lower()}.json"
         
         if not os.path.exists(file_path):
             print(f"[PLAYER WARNING] Missing animation file for: {word}. Skipping.")
@@ -82,16 +98,15 @@ class SignLanguagePlayer:
         with open(file_path, 'r') as f:
             animation_sequence = json.load(f)
         
-        # --- PHASE 1: TRANSITION (Faster & Snappier) ---
+        # --- PHASE 1: TRANSITION ---
         if self.last_frame_data is not None:
             first_frame_of_new_word = animation_sequence[0]
             for i in range(1, self.transition_frames + 1):
-                # Calculate the percentage of the transition (e.g., 1/4, 2/4, 3/4)
                 blend_factor = i / float(self.transition_frames)
                 blend_frame = self.calculate_smooth_frame(self.last_frame_data, first_frame_of_new_word, blend_factor)
                 self.render_to_screen(blend_frame, f"Transitioning...")
 
-        # --- PHASE 2: PLAYBACK (High Speed) ---
+        # --- PHASE 2: PLAYBACK ---
         for frame_data in animation_sequence:
             self.render_to_screen(frame_data, f"Signing: {word.upper()}")
             self.last_frame_data = frame_data 
@@ -101,6 +116,10 @@ class SignLanguagePlayer:
                 return
 
     def continuous_play_loop(self):
+        """
+        The main rendering loop that runs continuously. It checks the queue for new
+        ASL sequences and plays them. If the queue is empty, it maintains the idle state.
+        """
         print("[PLAYER] Avatar Engine running. Waiting for incoming speech...")
         
         while self.is_running:
@@ -123,18 +142,27 @@ class SignLanguagePlayer:
                         self.is_running = False
 
     def render_to_screen(self, frame_data: dict, ui_label: str) -> None:
+        """
+        Clears the canvas, commands the renderer to draw the frame data, adds UI text,
+        and updates the OpenCV display window.
+        
+        :param frame_data: The specific points data for the current frame.
+        :param ui_label: The text to display on the top-left corner of the screen.
+        """
         self.display_canvas.fill(0)
         self.avatar_renderer.draw_frame(self.display_canvas, frame_data)
         cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv2.imshow("Signify - Continuous Player", self.display_canvas)
-        
-        # We wait 1ms here so OpenCV draws, but the REAL delay is controlled in play_single_word
         cv2.waitKey(1)
 
 # =======================================================================
 # BACKGROUND THREAD: THE LIVE INPUT SIMULATOR
 # =======================================================================
 def live_typing_stream():
+    """
+    Runs in a separate thread. Acts as a simulator for the microphone API.
+    Translates typed English into ASL glosses and pushes them to the shared queue.
+    """
     translator = ASLTranslator()
     time.sleep(2) 
     
