@@ -1,7 +1,7 @@
 """
 ==============================================================================
 PROJECT: Signify - Sign Language Translation Avatar
-MODULE:  script.py
+MODULE:  download_videos.py
 PURPOSE: ASL Video Scraper and Downloader.
          Fetches and downloads MP4 video files for specific ASL words 
          from signasl.org to build the local dataset.
@@ -14,13 +14,13 @@ from bs4 import BeautifulSoup
 import concurrent.futures
 
 # --- CONFIGURATION ---
-# Your specific desktop path
-DOWNLOAD_DIR = r"C:\Users\User\Desktop\ASL Test Words"
+# my specific desktop path
+DOWNLOAD_DIR = r"C:\Users\User\Desktop\Signify\assets\mp4"
 
 # This ensures the folder is created if it doesn't already exist on your desktop
 os.makedirs(DOWNLOAD_DIR, exist_ok=True) 
 
-# The 25 specific words needed for our 10 Test Phrases
+# The specific words needed to download
 WORDS = [
     
 ]

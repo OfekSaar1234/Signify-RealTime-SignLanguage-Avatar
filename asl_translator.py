@@ -79,8 +79,8 @@ class ASLTranslator:
 
 # ==========================================
 # TEST BLOCK
-# This code only runs if you execute this specific file directly.
-# It will NOT run if you import this file into main.py.
+# This code runs only if we run this specific file directly.
+# this file will NOT run if you import this file into main.py.
 # ==========================================
 if __name__ == "__main__":
     # Create an instance of our translator engine

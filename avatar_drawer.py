@@ -5,7 +5,6 @@ MODULE:  avatar_drawer.py
 PURPOSE: The "Renderer" (The Painter).
          This module is responsible for taking the raw mathematical data (JSON)
          and drawing it visually on the screen.
-         
          Current Mode: "Points Only" (Simple Mode).
          It draws dots for every detected joint but does not draw connecting lines.
          This is the most efficient and error-proof way to visualize raw data.
@@ -17,7 +16,7 @@ import numpy as np
 class AvatarDrawer:
     def __init__(self):
         """
-        Initializes the drawer and defines the color scheme for the avatar.
+        Initializes the drawer and defines the color scheme for the avatar's body parts.
         """
         # A dictionary mapping the short keys to specific colors.
         # Format: (Blue, Green, Red) - OpenCV uses BGR, not RGB.
@@ -30,7 +29,7 @@ class AvatarDrawer:
 
     def draw_frame(self, canvas: np.ndarray, frame_data: dict) -> None:
         """
-        Reads a single frame of data and draws it onto the provided canvas.
+        Reads a single frame of data and draws its points onto the provided canvas.
 
         :param canvas: A numpy array representing the black background image. 
                        Shape is usually (720, 1280, 3).

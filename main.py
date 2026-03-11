@@ -5,7 +5,6 @@ MODULE:  main.py
 PURPOSE: The Continuous Application Controller.
          Uses Multithreading and a Queue to run the Avatar smoothly while 
          simultaneously receiving and translating text from the user live.
-         *SPEED UPGRADED FOR REAL-TIME ASL FLUENCY & NEW DIRECTORY STRUCTURE*
 ==============================================================================
 """
 

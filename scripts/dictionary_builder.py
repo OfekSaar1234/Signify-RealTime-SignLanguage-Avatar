@@ -5,7 +5,6 @@ MODULE:  dictionary_builder.py
 PURPOSE: The "Data Factory" (HIGH DETAIL MODE). 
          Extracts every single detected landmark (Face, Pose, Hands).
          Includes SMART SKIP to prevent overwriting existing JSONs.
-         *USES ABSOLUTE PATHS TO PREVENT TERMINAL ERRORS*
 ==============================================================================
 """
 
@@ -15,14 +14,10 @@ import json
 import os
 
 # --- ROBUST PATH SETUP ---
-# 1. Finds the exact path of the scripts directory on your computer
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-# 2. Goes up one level to the main Signify directory
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-# 3. Defines the exact paths to the assets directories
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+
 MP4_DIR = os.path.join(PROJECT_ROOT, "assets", "mp4")
 JSON_DIR = os.path.join(PROJECT_ROOT, "assets", "jsons")
-# -------------------------
 
 class DictionaryBuilder:
     def __init__(self):
