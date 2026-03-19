@@ -11,6 +11,8 @@ PURPOSE: The "Renderer" (The Painter).
 ==============================================================================
 """
 import cv2
+import json
+import os
 import numpy as np
 
 class AvatarDrawer:
@@ -18,14 +20,21 @@ class AvatarDrawer:
         """
         Initializes the drawer and defines the color scheme for the avatar's body parts.
         """
-        # A dictionary mapping the short keys to specific colors.
-        # Format: (Blue, Green, Red) - OpenCV uses BGR, not RGB.
-        self.BODY_PART_COLORS = {
-            "f": (0, 255, 255),  # Face -> Yellow
-            "p": (255, 0, 255),  # Pose (Body) -> Magenta
-            "l": (0, 255, 0),    # Left Hand -> Green
-            "r": (0, 255, 0)     # Right Hand -> Green
-        }
+        # Determine the absolute path to the config file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(base_dir, "config", "app_settings.json")
+        
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                settings = json.load(f)
+                # Convert the JSON lists [B, G, R] back into tuples (B, G, R) for OpenCV
+                self.BODY_PART_COLORS = {k: tuple(v) for k, v in settings.get("colors", {}).items()}
+        else:
+            print("[WARNING] app_settings.json not found. Using default colors.")
+            self.BODY_PART_COLORS = {
+                "f": (0, 255, 255),  "p": (255, 0, 255),
+                "l": (0, 255, 0),    "r": (0, 255, 0)
+            }
 
     def draw_frame(self, canvas: np.ndarray, frame_data: dict) -> None:
         """

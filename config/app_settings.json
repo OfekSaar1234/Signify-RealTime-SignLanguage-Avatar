@@ -1,0 +1,16 @@
+{
+  "display": {
+    "width": 1280,
+    "height": 720
+  },
+  "playback": {
+    "speed_ms": 15,
+    "transition_frames": 2
+  },
+  "colors": {
+    "f": [0, 255, 255],
+    "p": [255, 0, 255],
+    "l": [0, 255, 0],
+    "r": [0, 255, 0]
+  }
+}

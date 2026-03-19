@@ -42,17 +42,24 @@ class SignLanguagePlayer:
         Initializes the Sign Language Player. 
         Sets up the drawing canvas, rendering engine, and controls playback speeds.
         """
+        # --- LOAD CONFIGURATION ---
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(base_dir, "config", "app_settings.json")
+        
+        with open(config_path, "r") as f:
+            settings = json.load(f)
+            
         self.avatar_renderer = AvatarDrawer()
-        self.display_canvas = np.zeros((720, 1280, 3), dtype=np.uint8)
+        
+        height = settings["display"]["height"]
+        width = settings["display"]["width"]
+        self.display_canvas = np.zeros((height, width, 3), dtype=np.uint8)
         self.last_frame_data = None
         self.is_running = True
         
         # --- SPEED CONTROLS ---
-        self.playback_speed_ms = 15 
-        
-        # How many frames to use for the "bridge" between words. 
-        # Lower (1-2) = snappier/faster. Higher (4+) = smoother but slower.
-        self.transition_frames = 2 
+        self.playback_speed_ms = settings["playback"]["speed_ms"]
+        self.transition_frames = settings["playback"]["transition_frames"]
 
     def calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
         """
@@ -103,14 +110,17 @@ class SignLanguagePlayer:
             for i in range(1, self.transition_frames + 1):
                 blend_factor = i / float(self.transition_frames)
                 blend_frame = self.calculate_smooth_frame(self.last_frame_data, first_frame_of_new_word, blend_factor)
-                self.render_to_screen(blend_frame, f"Transitioning...")
+                key = self.render_to_screen(blend_frame, f"Transitioning...", wait_ms=1)
+                if key == ord('q'):
+                    self.is_running = False
+                    return
 
         # --- PHASE 2: PLAYBACK ---
         for frame_data in animation_sequence:
-            self.render_to_screen(frame_data, f"Signing: {word.upper()}")
+            key = self.render_to_screen(frame_data, f"Signing: {word.upper()}", wait_ms=self.playback_speed_ms)
             self.last_frame_data = frame_data 
             
-            if cv2.waitKey(self.playback_speed_ms) & 0xFF == ord('q'): 
+            if key == ord('q'): 
                 self.is_running = False
                 return
 
@@ -131,7 +141,9 @@ class SignLanguagePlayer:
                     if not self.is_running: break
             else:
                 if self.last_frame_data:
-                    self.render_to_screen(self.last_frame_data, "Waiting for speech...")
+                    key = self.render_to_screen(self.last_frame_data, "Waiting for speech...", wait_ms=33)
+                    if key == ord('q'):
+                        self.is_running = False
                 else:
                     self.display_canvas.fill(0)
                     cv2.putText(self.display_canvas, "Waiting for speech...", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -140,19 +152,21 @@ class SignLanguagePlayer:
                     if cv2.waitKey(33) & 0xFF == ord('q'):
                         self.is_running = False
 
-    def render_to_screen(self, frame_data: dict, ui_label: str) -> None:
+    def render_to_screen(self, frame_data: dict, ui_label: str, wait_ms: int = 1) -> int:
         """
         Clears the canvas, commands the renderer to draw the frame data, adds UI text,
         and updates the OpenCV display window.
         
         :param frame_data: The specific points data for the current frame.
         :param ui_label: The text to display on the top-left corner of the screen.
+        :param wait_ms: The amount of milliseconds OpenCV should wait on this frame.
+        :return: The ASCII code of the key pressed during the wait (if any).
         """
         self.display_canvas.fill(0)
         self.avatar_renderer.draw_frame(self.display_canvas, frame_data)
         cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         cv2.imshow("Signify - Continuous Player", self.display_canvas)
-        cv2.waitKey(1)
+        return cv2.waitKey(wait_ms) & 0xFF
 
 # =======================================================================
 # BACKGROUND THREAD: THE LIVE INPUT SIMULATOR

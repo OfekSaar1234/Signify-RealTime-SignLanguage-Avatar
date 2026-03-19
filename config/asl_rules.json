@@ -1,0 +1,8 @@
+{
+  "stop_words": [
+    "a", "an", "the", "is", "am", "are", "be", "to", "of", "it", "at", "in", "on"
+  ],
+  "time_words": [
+    "tomorrow", "yesterday", "today", "now", "later", "morning", "night", "soon"
+  ]
+}

@@ -8,22 +8,29 @@ PURPOSE: The NLP (Natural Language Processing) Engine.
 ==============================================================================
 """
 import re # 're' stands for Regular Expressions. It is a built-in Python library for advanced text search and manipulation.
+import json
+import os
 
 class ASLTranslator:
-    def __init__(self):
+    def __init__(self, config_file="asl_rules.json"):
         """
         Initializes the rules and dictionaries for the ASL translation.
         We use Python 'sets' (the {} brackets) instead of lists [] because 
         searching inside a set is mathematically faster (O(1) time complexity).
         """
         
-        # STOP WORDS: English words that do not have a direct sign in ASL.
-        # We delete these to make the avatar's movement faster and more natural.
-        self.stop_words = {"a", "an", "the", "is", "am", "are", "be", "to", "of", "it", "at", "in", "on"}
+        # Determine the absolute path to the config file
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(base_dir, "config", config_file)
         
-        # TIME WORDS: In ASL syntax (Time-Topic-Comment), time words usually 
-        # jump to the very beginning of the sentence to establish context.
-        self.time_words = {"tomorrow", "yesterday", "today", "now", "later", "morning", "night", "soon"}
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                rules = json.load(f)
+                self.stop_words = set(rules.get("stop_words", []))
+                self.time_words = set(rules.get("time_words", []))
+        else:
+            print(f"[WARNING] {config_file} not found.")
+          
 
     def text_to_gloss(self, text: str) -> list:
         """
