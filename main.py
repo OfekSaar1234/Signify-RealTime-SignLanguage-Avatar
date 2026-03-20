@@ -28,6 +28,8 @@ import numpy as np
 import threading
 import queue
 import time
+import asyncio
+import websockets
 
 # Import our custom modules
 from avatar_drawer import AvatarDrawer
@@ -35,6 +37,24 @@ from asl_translator import ASLTranslator
 
 # --- THE SHARED QUEUE ---
 phrase_queue = queue.Queue()
+
+# --- WEBSOCKET SERVER CONFIG ---
+connected_ws_clients = set()
+ws_loop = None
+
+async def ws_connection_handler(websocket, *args, **kwargs):
+    """Handles new WebSocket connections from Unity/JS Frontend."""
+    connected_ws_clients.add(websocket)
+    print(f"\n[NETWORK] 3D Avatar connected! Total clients: {len(connected_ws_clients)}")
+    try:
+        # Keep the connection open to continuously send data
+        async for message in websocket:
+            pass 
+    except websockets.exceptions.ConnectionClosed:
+        pass
+    finally:
+        connected_ws_clients.remove(websocket)
+        print(f"\n[NETWORK] 3D Avatar disconnected. Total clients: {len(connected_ws_clients)}")
 
 class SignLanguagePlayer:
     def __init__(self):
@@ -162,6 +182,14 @@ class SignLanguagePlayer:
         :param wait_ms: The amount of milliseconds OpenCV should wait on this frame.
         :return: The ASCII code of the key pressed during the wait (if any).
         """
+        # --- BROADCAST KEY POSES TO UNITY ---
+        # Send the extracted Key Poses over the WebSocket so Unity can Lerp them!
+        if connected_ws_clients and ws_loop:
+            json_string = json.dumps(frame_data, separators=(',', ':'))
+            for client in list(connected_ws_clients):
+                asyncio.run_coroutine_threadsafe(client.send(json_string), ws_loop)
+
+        # --- DRAW TO LOCAL 2D CANVAS ---
         self.display_canvas.fill(0)
         self.avatar_renderer.draw_frame(self.display_canvas, frame_data)
         cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -203,6 +231,18 @@ def live_typing_stream():
             break
 
 # =======================================================================
+# BACKGROUND THREAD: WEBSOCKET SERVER
+# =======================================================================
+def start_websocket_server():
+    global ws_loop
+    ws_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(ws_loop)
+    start_server = websockets.serve(ws_connection_handler, "localhost", 8765)
+    ws_loop.run_until_complete(start_server)
+    print("[NETWORK] WebSocket Server started on ws://localhost:8765")
+    ws_loop.run_forever()
+
+# =======================================================================
 # APPLICATION ENTRY POINT
 # =======================================================================
 if __name__ == "__main__":
@@ -210,6 +250,10 @@ if __name__ == "__main__":
     
     print("[SYSTEM] Booting up Signify Architecture...")
     print("[SYSTEM] Press 'q' on the video window to quit.")
+    
+    # Start the WebSocket server to stream to Unity
+    ws_thread = threading.Thread(target=start_websocket_server, daemon=True)
+    ws_thread.start()
     
     api_thread = threading.Thread(target=live_typing_stream, daemon=True)
     api_thread.start()
