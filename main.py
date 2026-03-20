@@ -233,14 +233,15 @@ def live_typing_stream():
 # =======================================================================
 # BACKGROUND THREAD: WEBSOCKET SERVER
 # =======================================================================
-def start_websocket_server():
+async def run_ws_server():
     global ws_loop
-    ws_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(ws_loop)
-    start_server = websockets.serve(ws_connection_handler, "localhost", 8765)
-    ws_loop.run_until_complete(start_server)
-    print("[NETWORK] WebSocket Server started on ws://localhost:8765")
-    ws_loop.run_forever()
+    ws_loop = asyncio.get_running_loop()
+    async with websockets.serve(ws_connection_handler, "localhost", 8765):
+        print("[NETWORK] WebSocket Server started on ws://localhost:8765")
+        await asyncio.Future()  # Keeps the server running forever
+
+def start_websocket_server():
+    asyncio.run(run_ws_server())
 
 # =======================================================================
 # APPLICATION ENTRY POINT
