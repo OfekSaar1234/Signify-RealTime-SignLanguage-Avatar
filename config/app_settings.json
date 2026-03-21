@@ -4,7 +4,7 @@
     "height": 720
   },
   "playback": {
-    "speed_ms": 500,
+    "speed_ms": 50,
     "transition_frames": 2
   },
   "colors": {

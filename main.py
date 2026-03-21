@@ -30,6 +30,7 @@ import queue
 import time
 import asyncio
 import websockets
+import speech_recognition as sr
 
 # Import our custom modules
 from avatar_drawer import AvatarDrawer
@@ -231,6 +232,56 @@ def live_typing_stream():
             break
 
 # =======================================================================
+# BACKGROUND THREAD: THE LIVE MICROPHONE STREAM
+# =======================================================================
+def live_audio_stream():
+    """
+    Runs in a separate thread. Acts as the real microphone API.
+    Listens to the user's voice, translates speech to English text using Google STT,
+    translates the text into ASL glosses, and pushes them to the shared queue.
+    """
+    translator = ASLTranslator()
+    audio_speech_recognizer = sr.Recognizer()
+    
+    time.sleep(2) 
+    
+    print("\n" + "="*50)
+    print("🎙️ LIVE MICROPHONE MODE ACTIVATED 🎙️")
+    print("Speak into your microphone. The system will detect when you stop speaking.")
+    print("To quit, click the video window and press 'q'.")
+    print("="*50 + "\n")
+    
+    with sr.Microphone() as source:
+        print("[MIC] Calibrating for background noise... Please wait 1 second.")
+        audio_speech_recognizer.adjust_for_ambient_noise(source, duration=1)
+        print("[MIC] Calibration complete! You can start speaking.")
+        
+        while player.is_running:
+            try:
+                # Listen until silence is detected (end of sentence)
+                audio_data = audio_speech_recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                
+                print("[MIC] Processing speech...")
+                # Send audio to Google's Web Speech API
+                user_text = audio_speech_recognizer.recognize_google(audio_data)
+                
+                print(f"\n[MIC] You said: '{user_text}'")
+                
+                asl_glosses = translator.text_to_gloss(user_text)
+                print(f"[BRAIN] Translated to ASL: {asl_glosses}")
+                
+                if asl_glosses:
+                    phrase_queue.put(asl_glosses)
+                    
+            except sr.WaitTimeoutError:
+                continue  # No speech detected, loop again
+            except sr.UnknownValueError:
+                print("[MIC] Could not understand audio. Try again.")
+            except Exception as e:
+                if player.is_running:
+                    print(f"[MIC] Network or API error: {e}")
+
+# =======================================================================
 # BACKGROUND THREAD: WEBSOCKET SERVER
 # =======================================================================
 async def run_ws_server():
@@ -256,7 +307,8 @@ if __name__ == "__main__":
     ws_thread = threading.Thread(target=start_websocket_server, daemon=True)
     ws_thread.start()
     
-    api_thread = threading.Thread(target=live_typing_stream, daemon=True)
+    # Switch from typing stream to live microphone stream!
+    api_thread = threading.Thread(target=live_audio_stream, daemon=True)
     api_thread.start()
     
     player.continuous_play_loop()
