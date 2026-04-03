@@ -17,7 +17,6 @@
   "_comment_playback": "speed_ms defines the time between keyframes (33ms ~ 30FPS). transition_frames controls how many smooth frames are injected between two distinct signs.",
 
   "network": {
-    "enable_websocket": false,
     "enable_websocket": true,
     "ws_host": "localhost",
     "ws_port": 8765
