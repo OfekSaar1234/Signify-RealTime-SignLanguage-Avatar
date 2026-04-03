@@ -35,18 +35,25 @@
 
 ---
 
-## �️ Phase 1: Foundation (Stability & Performance)
-*Immediate tasks to make the existing 2D OpenCV and queue architecture bulletproof and fast before adding new features.*
-- [ ] **Thread-Safety for WebSockets:** Add a Thread Lock to the `connected_ws_clients` set in `main.py` to prevent a fatal `RuntimeError` (Set changed size during iteration) when the Network Thread deletes a disconnected client.
-- [ ] **Implement LRU Cache for Word Loading:** Wrap the disk-reading logic (`play_single_word`) using `@lru_cache` from the `functools` library to prevent repeated, slow disk reads and eliminate micro-stutters.
-- [ ] **JSON Optimization & Minification:** Write a short side-script to process all JSON files. Truncate the decimal precision of the coordinates (keep only 3-4 digits instead of 15) to drastically reduce the 200KB footprint and speed up memory/network loading.
+## 🛠️ Phase 1: Foundation (Stability & Performance)
+
+- [ ] **Refactor Data Factory Paths (Sharding):** Update `dictionary_builder.py` so that instead of saving to a flat `assets/jsons/` directory, it calculates an alphabetical sub-path (e.g., `assets/jsons/a/ap/apple.json`). This prevents OS-level directory scanning bottlenecks when scaling up to 40,000 files.
+- [ ] **Write a Data Migration Script:** Create a quick, one-time Python script to read all currently existing flat JSON files and move them into the new sharded folder structure automatically.
+- [ ] **Update Avatar Controller Paths:** Modify the disk-reading logic in `main.py` so that when the system looks for a word, it dynamically reconstructs the exact sharded path to locate the file instantly.
+- [ ] **Implement LRU Cache for Word Loading:** Isolate the specific function in `main.py` that reads the JSON file from the SSD. Wrap it using `@lru_cache(maxsize=500)` from the `functools` library to prevent repeated disk reads for the same words and eliminate micro-stutters.
+- [ ] **JSON Optimization & Minification:** Write a short side-script to process all JSON files. Truncate the decimal precision of the coordinates (keep only 3-4 digits instead of 15) to drastically reduce the file footprint and speed up memory/network loading.
+- [ ] **Pre-load Common Vocabulary (Cache Warming):** Add a boot-up sequence in `main.py` that automatically triggers the read function for the top 100 most common English words. This warms up the RAM cache so the initial user experience has zero read latency.
+
+
 
 ## 🎙️ Phase 2: Real-Time Speech-to-Text (Live STT) Integration
 *Goal: Replace manual typing with a microphone that detects when a sentence ends. (Fully autonomous).*
-- [ ] **Install STT Dependencies:** Run `pip install SpeechRecognition pyaudio`.
-- [ ] **Integrate Google STT (Producer Thread):** Create a new `live_audio_stream` background thread to replace `live_typing_stream` in `main.py`.
-- [ ] **Voice Activity Detection (VAD):** Configure the system to wait for silence (end of sentence) before sending the audio buffer to the Google Web Speech API.
-- [ ] **Queue Integration:** Verify the returned text successfully passes to `asl_translator.py` and the resulting ASL glosses are pushed into the `phrase_queue`.
+- [X] **Install STT Dependencies:** Run `pip install SpeechRecognition pyaudio`.
+- [X] **Integrate Google STT (Producer Thread):** Create a new `live_audio_stream` background thread to replace `live_typing_stream` in `main.py`.
+- [X] **Voice Activity Detection (VAD):** Configure the system to wait for silence (end of sentence) before sending the audio buffer to the Google Web Speech API.
+- [X] **Queue Integration:** Verify the returned text successfully passes to `asl_translator.py` and the resulting ASL glosses are pushed into the `phrase_queue`.
+
+
 
 ## 🧠 Phase 3: Upgrading the "Brain" to Gemini Pro (NLP)
 *Goal: Replace hardcoded syntax rules with an advanced language model for accurate ASL Gloss translation.*
@@ -54,16 +61,22 @@
 - [ ] **System Prompt Engineering:** Use the prompt: *"You are an ASL translator. Convert the following English sentence to ASL Gloss strictly using Time-Topic-Comment structure. Return ONLY a Python list of strings"*.
 - [ ] **Security & Tier Limits:** Securely integrate the API key and manage requests to stay within the student tier limits.
 
+
+
 ## 🔄 Phase 4: Just-In-Time (JIT) Data Generation
 *Goal: Handle dictionary misses without crashing the system or freezing the avatar.*
 - [ ] **Missing Word Detection:** Implement logic in `main.py` to detect when a translated word lacks a corresponding JSON file in `assets/jsons`.
 - [ ] **JIT Pipeline:** Open a background thread to run `download_videos.py` (fetch MP4) immediately followed by `dictionary_builder.py` (extract landmarks to JSON).
 - [ ] **Smooth Queue Management:** Ensure the main thread continues running smoothly (e.g., playing an "idle" animation) while waiting, and pushes the new JSON to the queue as soon as it's ready.
 
+
+
 ## 🎞️ Phase 5: Mathematical Motion Smoothing (Interpolation)
 *Goal: Create fluid, natural movements and prevent robotic or jittery transitions.*
 - [ ] **Refine Linear Interpolation (LERP):** Enhance the transition calculations inside the main loop of `main.py` (between final coordinates of Word A and initial coordinates of Word B).
 - [ ] **Tune Transition Frames:** Experiment with generating 5-10 calculated frames so the avatar moves its hands smoothly between positions without looking robotic or jittery.
+
+
 
 ## 🎮 Phase 6: Unity 3D Integration (Future Step)
 *Goal: Transition from the 2D OpenCV development environment to the final production build.*

@@ -36,6 +36,18 @@ import speech_recognition as sr
 from avatar_drawer import AvatarDrawer
 from asl_translator import ASLTranslator
 
+# --- GLOBAL CONFIGURATION ---
+# Read configuration ONCE at startup to ensure zero latency during execution.
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CONFIG_PATH = os.path.join(BASE_DIR, "config", "app_settings.json")
+
+try:
+    with open(CONFIG_PATH, "r") as f:
+        APP_SETTINGS = json.load(f)
+except FileNotFoundError:
+    print(f"[ERROR] Configuration file missing at {CONFIG_PATH}. Using empty defaults.")
+    APP_SETTINGS = {}
+
 # --- THE SHARED QUEUE ---
 phrase_queue = queue.Queue()
 
@@ -63,24 +75,21 @@ class SignLanguagePlayer:
         Initializes the Sign Language Player. 
         Sets up the drawing canvas, rendering engine, and controls playback speeds.
         """
-        # --- LOAD CONFIGURATION ---
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        config_path = os.path.join(base_dir, "config", "app_settings.json")
-        
-        with open(config_path, "r") as f:
-            settings = json.load(f)
-            
         self.avatar_renderer = AvatarDrawer()
         
-        height = settings["display"]["height"]
-        width = settings["display"]["width"]
+        # --- USE GLOBALLY LOADED CONFIGURATION ---
+        display_settings = APP_SETTINGS.get("display", {"height": 720, "width": 1280})
+        height = display_settings.get("height", 720)
+        width = display_settings.get("width", 1280)
+        
         self.display_canvas = np.zeros((height, width, 3), dtype=np.uint8)
         self.last_frame_data = None
         self.is_running = True
         
         # --- SPEED CONTROLS ---
-        self.playback_speed_ms = settings["playback"]["speed_ms"]
-        self.transition_frames = settings["playback"]["transition_frames"]
+        playback_settings = APP_SETTINGS.get("playback", {"speed_ms": 33, "transition_frames": 5})
+        self.playback_speed_ms = playback_settings.get("speed_ms", 33)
+        self.transition_frames = playback_settings.get("transition_frames", 5)
 
     def calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
         """
@@ -287,8 +296,13 @@ def live_audio_stream():
 async def run_ws_server():
     global ws_loop
     ws_loop = asyncio.get_running_loop()
-    async with websockets.serve(ws_connection_handler, "localhost", 8765):
-        print("[NETWORK] WebSocket Server started on ws://localhost:8765")
+    
+    network_cfg = APP_SETTINGS.get("network", {})
+    host = network_cfg.get("ws_host", "localhost")
+    port = network_cfg.get("ws_port", 8765)
+    
+    async with websockets.serve(ws_connection_handler, host, port):
+        print(f"[NETWORK] WebSocket Server started on ws://{host}:{port}")
         await asyncio.Future()  # Keeps the server running forever
 
 def start_websocket_server():
@@ -303,12 +317,18 @@ if __name__ == "__main__":
     print("[SYSTEM] Booting up Signify Architecture...")
     print("[SYSTEM] Press 'q' on the video window to quit.")
     
-    # Start the WebSocket server to stream to Unity
-    ws_thread = threading.Thread(target=start_websocket_server, daemon=True)
-    ws_thread.start()
+    # Conditionally start the WebSocket server based on config
+    if APP_SETTINGS.get("network", {}).get("enable_websocket", False):
+        ws_thread = threading.Thread(target=start_websocket_server, daemon=True)
+        ws_thread.start()
     
-    # Switch from typing stream to live microphone stream!
-    api_thread = threading.Thread(target=live_audio_stream, daemon=True)
+    # --- SELECT YOUR INPUT MODE HERE ---
+    input_mode = APP_SETTINGS.get("input_mode", "typing")
+    if input_mode == "microphone":
+        api_thread = threading.Thread(target=live_audio_stream, daemon=True)
+    else:
+        api_thread = threading.Thread(target=live_typing_stream, daemon=True)
+        
     api_thread.start()
     
     player.continuous_play_loop()
