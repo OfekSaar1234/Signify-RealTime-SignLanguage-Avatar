@@ -1,7 +1,7 @@
 {
   "_comment_intro": "Main configuration file. Standard JSON doesn't support comments, so we use _comment fields as notes.",
 
-  "input_mode": "typing",
+  "input_mode": "audio_loopback",
   "_comment_input_mode": "Choose your primary input method. Options: 'typing' (keyboard) OR 'microphone' (Live STT).",
 
   "display": {
@@ -11,8 +11,8 @@
   "_comment_display": "The resolution of the local 2D Avatar rendering canvas.",
 
   "playback": {
-    "speed_ms": 100,
-    "transition_frames": 5
+    "speed_ms": 150,
+    "transition_frames": 10 
   },
   "_comment_playback": "speed_ms defines the time between keyframes (33ms ~ 30FPS). transition_frames controls how many smooth frames are injected between two distinct signs.",
 

@@ -62,12 +62,12 @@ class AvatarDrawer:
                 
                 # Loop through every single point (joint) in that list
                 for point_coordinates in points_list:
-                    # The coordinates in the JSON are "Normalized" (0.0 to 1.0).
-                    # We must multiply them by the screen size to get actual pixels.
-                    # x * width = Horizontal Pixel
-                    # y * height = Vertical Pixel
-                    x_float = point_coordinates[0]
-                    y_float = point_coordinates[1]
+                    # Coordinates are now RELATIVE to the chest (0.0).
+                    # We scale them down by 0.35 visually so they fit on the screen,
+                    # then add 0.5 to shift the 0,0 origin back to the center of the 2D canvas,
+                    # then multiply by the screen size to get actual pixels.
+                    x_float = (point_coordinates[0] * 0.35) + 0.5
+                    y_float = (point_coordinates[1] * 0.35) + 0.5
                     
                     center_x = int(x_float * canvas_width)
                     center_y = int(y_float * canvas_height)

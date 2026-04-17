@@ -31,6 +31,7 @@ import time
 import asyncio
 import websockets
 import speech_recognition as sr
+import pyaudiowpatch as pyaudio
 
 # Import our custom modules
 from avatar_drawer import AvatarDrawer
@@ -245,50 +246,135 @@ def live_typing_stream():
 # =======================================================================
 def live_audio_stream():
     """
-    Runs in a separate thread. Acts as the real microphone API.
-    Listens to the user's voice, translates speech to English text using Google STT,
-    translates the text into ASL glosses, and pushes them to the shared queue.
+    Runs in a separate thread. Acts as the system audio (loopback) listener.
+    Captures audio continuously, chunks it using a Voice Activity (Volume) threshold,
+    and sends complete phrases to Google Web Speech API natively without blocking.
     """
     translator = ASLTranslator()
-    audio_speech_recognizer = sr.Recognizer()
+    recognizer = sr.Recognizer()
     
     time.sleep(2) 
     
     print("\n" + "="*50)
-    print("🎙️ LIVE MICROPHONE MODE ACTIVATED 🎙️")
-    print("Speak into your microphone. The system will detect when you stop speaking.")
+    print("🎙️ LIVE SYSTEM AUDIO (LOOPBACK) MODE ACTIVATED 🎙️")
+    print("Play a YouTube video or Zoom call. The system will detect when speech stops.")
     print("To quit, click the video window and press 'q'.")
     print("="*50 + "\n")
     
-    with sr.Microphone() as source:
-        print("[MIC] Calibrating for background noise... Please wait 1 second.")
-        audio_speech_recognizer.adjust_for_ambient_noise(source, duration=1)
-        print("[MIC] Calibration complete! You can start speaking.")
+    with pyaudio.PyAudio() as p:
+        try:
+            wasapi_info = p.get_host_api_info_by_type(pyaudio.paWASAPI)
+        except OSError:
+            print("[MIC ERROR] WASAPI is not available on this system.")
+            return
+
+        # Locate the default speakers and its hidden Loopback channel
+        default_speakers = p.get_device_info_by_index(wasapi_info["defaultOutputDevice"])
+        loopback_device = None
+        
+        if not default_speakers["isLoopbackDevice"]:
+            for loopback in p.get_loopback_device_info_generator():
+                if default_speakers["name"] in loopback["name"]:
+                    loopback_device = loopback
+                    break
+        else:
+            loopback_device = default_speakers
+            
+        if not loopback_device:
+            print("[MIC ERROR] Default loopback output device not found.")
+            return
+            
+        print(f"[MIC] Target Audio Device: {loopback_device['name']}")
+        
+        audio_queue = queue.Queue()
+        
+        # Non-blocking callback dumps raw C-level audio into a Python thread-safe queue
+        def callback(in_data, frame_count, time_info, status):
+            audio_queue.put(in_data)
+            return (in_data, pyaudio.paContinue)
+        
+        sample_rate = int(loopback_device["defaultSampleRate"])
+        channels = loopback_device["maxInputChannels"]
+        sample_width = p.get_sample_size(pyaudio.paInt16)
+        chunk_size = 4096 # Stable chunk size for CPU efficiency
+        
+        stream = p.open(
+            format=pyaudio.paInt16, channels=channels, rate=sample_rate,
+            frames_per_buffer=chunk_size, input=True,
+            input_device_index=loopback_device["index"], stream_callback=callback
+        )
+        
+        stream.start_stream()
+        
+        # VAD (Voice Activity Detection) Parameters
+        SILENCE_THRESHOLD = 500  # RMS Volume required to trigger "recording"
+        MAX_SILENCE_CHUNKS = int((sample_rate / chunk_size) * 1.5) # 1.5 seconds of silence ends sentence
+        
+        frames = []
+        is_recording = False
+        silence_chunks = 0
         
         while player.is_running:
             try:
-                # Listen until silence is detected (end of sentence)
-                audio_data = audio_speech_recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                chunk = audio_queue.get(timeout=1)
+            except queue.Empty:
+                continue
                 
-                print("[MIC] Processing speech...")
-                # Send audio to Google's Web Speech API
-                user_text = audio_speech_recognizer.recognize_google(audio_data)
+            # Convert byte stream to numpy array for fast mathematical evaluation
+            audio_data_np = np.frombuffer(chunk, dtype=np.int16)
+            
+            # System audio is usually Stereo (2 channels). Google STT wants Mono (1 channel).
+            # We take only the Left channel (every nth frame) to instantly downmix to mono.
+            if channels > 1:
+                audio_data_np = audio_data_np[::channels]
+            
+            mono_chunk = audio_data_np.tobytes()
+            
+            # Calculate Volume (RMS)
+            rms = np.sqrt(np.mean(np.square(audio_data_np.astype(np.float32)))) if len(audio_data_np) > 0 else 0
+            
+            if rms > SILENCE_THRESHOLD:
+                if not is_recording:
+                    print("[MIC] Audio detected! Recording...")
+                is_recording = True
+                silence_chunks = 0
+                frames.append(mono_chunk)
                 
-                print(f"\n[MIC] You said: '{user_text}'")
+            elif is_recording:
+                silence_chunks += 1
+                frames.append(mono_chunk)
                 
-                asl_glosses = translator.text_to_gloss(user_text)
-                print(f"[BRAIN] Translated to ASL: {asl_glosses}")
-                
-                if asl_glosses:
-                    phrase_queue.put(asl_glosses)
+                if silence_chunks > MAX_SILENCE_CHUNKS:
+                    is_recording = False # Sentence finished
+                    audio_bytes = b''.join(frames)
+                    frames = [] # Reset for the next sentence
                     
-            except sr.WaitTimeoutError:
-                continue  # No speech detected, loop again
-            except sr.UnknownValueError:
-                print("[MIC] Could not understand audio. Try again.")
-            except Exception as e:
-                if player.is_running:
-                    print(f"[MIC] Network or API error: {e}")
+                    # --- DAEMON THREAD (OFFLOAD API CALL) ---
+                    # We create a tiny worker thread to handle the 1-second Google API delay
+                    # This allows the main While loop to instantly go back to listening for the NEXT sentence!
+                    def process_audio(raw_audio):
+                        try:
+                            # Package the mono audio into the SpeechRecognition library format
+                            audio_obj = sr.AudioData(raw_audio, sample_rate, sample_width)
+                            text = recognizer.recognize_google(audio_obj)
+                            
+                            print(f"\n[MIC] Audio Transcribed: '{text}'")
+                            asl_glosses = translator.text_to_gloss(text)
+                            
+                            if asl_glosses:
+                                print(f"[BRAIN] Translated to ASL: {asl_glosses}")
+                                phrase_queue.put(asl_glosses)
+                                
+                        except sr.UnknownValueError:
+                            print("[MIC] Unrecognized background noise. Ignored.")
+                        except sr.RequestError as e:
+                            print(f"[MIC] API Network Error: {e}")
+                            
+                    threading.Thread(target=process_audio, args=(audio_bytes,), daemon=True).start()
+                    
+        # Cleanup
+        stream.stop_stream()
+        stream.close()
 
 # =======================================================================
 # BACKGROUND THREAD: WEBSOCKET SERVER
@@ -324,7 +410,7 @@ if __name__ == "__main__":
     
     # --- SELECT YOUR INPUT MODE HERE ---
     input_mode = APP_SETTINGS.get("input_mode", "typing")
-    if input_mode == "microphone":
+    if input_mode == "audio_loopback":
         api_thread = threading.Thread(target=live_audio_stream, daemon=True)
     else:
         api_thread = threading.Thread(target=live_typing_stream, daemon=True)

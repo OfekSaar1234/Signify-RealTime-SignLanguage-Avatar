@@ -12,6 +12,7 @@ import cv2
 import mediapipe as mp
 import json
 import os
+import math
 
 # --- ROBUST PATH SETUP ---
 # Go up one level from 'scripts' to reach the main 'Signify' directory
@@ -32,22 +33,70 @@ class DictionaryBuilder:
             model_complexity=1
         )
 
-    def convert_landmarks_to_list(self, landmarks_object) -> list:
+    def get_anchor_point(self, pose_landmarks):
+        """
+        Calculates the center of the chest (mathematical midpoint between the left 
+        and right shoulders). MediaPipe Pose: Left Shoulder=11, Right Shoulder=12.
+        """
+        if not pose_landmarks:
+            # Default to the center of the screen if no pose is detected
+            return (0.5, 0.5, 0.0)
+            
+        left_shoulder = pose_landmarks.landmark[11]
+        right_shoulder = pose_landmarks.landmark[12]
+        
+        avg_x = (left_shoulder.x + right_shoulder.x) / 2.0
+        avg_y = (left_shoulder.y + right_shoulder.y) / 2.0
+        avg_z = (left_shoulder.z + right_shoulder.z) / 2.0
+        
+        return (avg_x, avg_y, avg_z)
+
+    def get_scale_factor(self, pose_landmarks):
+        """
+        Calculates the scale multiplier to prevent the "zooming in and out" effect.
+        Measures the distance between the shoulders and forces it to a standard size.
+        """
+        if not pose_landmarks:
+            return 1.0
+            
+        left_shoulder = pose_landmarks.landmark[11]
+        right_shoulder = pose_landmarks.landmark[12]
+        
+        # Calculate the 3D distance between the two shoulders
+        shoulder_width = math.sqrt(
+            (left_shoulder.x - right_shoulder.x)**2 + 
+            (left_shoulder.y - right_shoulder.y)**2 + 
+            (left_shoulder.z - right_shoulder.z)**2
+        )
+        
+        if shoulder_width < 0.001: return 1.0
+        
+        # Normalize the skeleton so the shoulder width is always exactly 0.5 units
+        return 0.5 / shoulder_width
+
+    def convert_landmarks_to_list(self, landmarks_object, anchor=(0.0, 0.0, 0.0), scale=1.0) -> list:
         """
         Converts a MediaPipe landmarks object into a standard Python list of coordinates.
+        Subtracts the anchor coordinates to make all points relative to the chest.
         
         :param landmarks_object: The raw landmark data returned by MediaPipe.
+        :param anchor: The (x, y, z) tuple representing the center of the chest.
+        :param scale: The multiplier to normalize the size of the skeleton.
         :return: A list of [x, y, z] coordinates rounded to 5 decimal places.
         """
         if not landmarks_object: 
             return []
         
         optimized_points = []
+        anchor_x, anchor_y, anchor_z = anchor
         
         for landmark in landmarks_object.landmark:
-            x = round(landmark.x, 5)
-            y = round(landmark.y, 5)
-            z = round(landmark.z, 5)
+            # Subtract anchor for relative position, then multiply by scale
+            # GODOT COORDINATE MAPPING:
+            # X is unchanged. Y is inverted (MediaPipe + is Down, Godot + is Up).
+            x = round((landmark.x - anchor_x) * scale, 5)
+            y = round((landmark.y - anchor_y) * scale, 5)
+            z = round((landmark.z - anchor_z) * scale, 5)
             
             optimized_points.append([x, y, z])
             
@@ -92,11 +141,14 @@ class DictionaryBuilder:
                 image_rgb = cv2.cvtColor(frame_image, cv2.COLOR_BGR2RGB)
                 ai_results = self.ai_model.process(image_rgb)
                 
+                anchor = self.get_anchor_point(ai_results.pose_landmarks)
+                scale = self.get_scale_factor(ai_results.pose_landmarks)
+                
                 current_frame_data = {
-                    "f": self.convert_landmarks_to_list(ai_results.face_landmarks),
-                    "p": self.convert_landmarks_to_list(ai_results.pose_landmarks),
-                    "l": self.convert_landmarks_to_list(ai_results.left_hand_landmarks),
-                    "r": self.convert_landmarks_to_list(ai_results.right_hand_landmarks)
+                    "f": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale),
+                    "p": self.convert_landmarks_to_list(ai_results.pose_landmarks, anchor, scale),
+                    "l": self.convert_landmarks_to_list(ai_results.left_hand_landmarks, anchor, scale),
+                    "r": self.convert_landmarks_to_list(ai_results.right_hand_landmarks, anchor, scale)
                 }
                 
                 full_animation_data.append(current_frame_data)

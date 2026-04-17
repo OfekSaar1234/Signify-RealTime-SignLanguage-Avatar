@@ -1,85 +1,57 @@
 # Signify Project - Action Plan & To-Do List
 
-## 📝 Current State & Architecture Options (Review with Ori)
+## 📝 Architecture Decisions (Max Performance Path)
 
-### 1. Current State of `main.py`
-- **Audio Capture:** Uses `sr.Microphone()`. It currently listens to the **external physical microphone** (room noise, your voice), *not* the internal computer audio.
-- **Speech-to-Text (STT):** Uses `recognize_google()`. This sends audio to Google's free Web Speech API, returning English text.
-- **Translation Brain:** Passes the English text to `asl_translator.py`, which uses a local JSON ruleset to rearrange time words and replace words. It is lightning-fast but translates word-for-word (does not fully understand ASL grammar).
+### 1. Frontend & Rendering Engine: Godot 4 + VRM
+- **Why:** Godot runs natively (C++) and avoids the massive RAM/CPU overhead of browser-based solutions like Electron + Three.js. It handles OS-level transparent windows natively and highly efficiently.
+- **Standard:** We are using the **VRM Standard** for avatars. This ensures a uniform bone hierarchy, preventing the need for manual dictionary mapping, and natively supports unified semantic facial expressions.
 
-### 2. Audio Capture Options (Internal PC Audio)
-*How to capture YouTube/Zoom audio from the computer itself.*
-- **Option A: No Code Changes (Hardware/OS Route)**
-  - **How it works:** Enable "Stereo Mix" in Windows Sound Settings, or install a free Virtual Audio Cable (like VB-Cable). Set it as your default microphone.
-  - **Pros:** Zero code changes required in `main.py`. The existing `sr.Microphone()` will just pick up the computer's audio automatically.
-  - **Cons:** Requires one-time manual setup on the host computer.
-- **Option B: Code Changes (Software Route)**
-  - **How it works:** Replace `pyaudio` with `pyaudiowpatch` in Python, and rewrite the capture logic to explicitly target the Windows WASAPI Loopback device.
-  - **Pros:** Works out-of-the-box for any user without them needing to install Virtual Audio Cables or change Windows settings.
-  - **Cons:** Requires rewriting the audio listening thread in `main.py`.
+### 2. Kinematic Retargeting (Python Server-Side Math)
+- **Why:** Sending raw 3D XYZ coordinates to the frontend requires heavy calculations (Inverse Kinematics) on the rendering side, causing latency. JavaScript solutions (like Kalidokit) are deprecated and lock finger movements, destroying ASL signs.
+- **Solution:** The Python backend will convert MediaPipe spatial points into **Quaternions (Angles)** using libraries like `SciPy` (Cross Products) *before* saving them to the JSON/sending them over WebSockets. Godot will simply receive these exact angles and apply them instantly to the VRM skeleton with zero math required on the frontend.
 
-### 3. NLP "Brain" Options (Translation to ASL)
-*How to convert English text/audio into ASL Gloss.*
-- **Option A: Current Setup (Local Python Brain)**
-  - **Flow:** Free Google STT -> Local `asl_translator.py`.
-  - **Pros:** 100% Free, unlimited, and instantaneous (zero delay).
-  - **Cons:** "Dumb" translation. Translates word-for-word and misses complex ASL grammatical structures.
-- **Option B: Hybrid Setup (Gemini Pro for Text)** *(Recommended for Phase 3)*
-  - **Flow:** Free Google STT -> Send English Text to Gemini Pro API -> Receive ASL Gloss.
-  - **Pros:** Extremely accurate, understands context and ASL grammar (Time-Topic-Comment).
-  - **Cons:** Network latency (1-3 seconds to get a response). Free-tier limits (e.g., 15 requests/min) might cause blocks if the video is fast-paced.
-- **Option C: All-in-One AI (Gemini 1.5 Pro for Audio)**
-  - **Flow:** Capture Raw PC Audio -> Send directly to Gemini 1.5 Pro -> Receive ASL Gloss.
-  - **Pros:** Skips the STT middle-man. Gemini understands vocal tone, emphasis, and context perfectly.
-  - **Cons:** Uploading audio is slow. Highest latency for real-time translation. Audio tokens eat into free-tier limits extremely fast.
+### 3. Audio Capture: Windows Internal Loopback
+- **Decision:** Capture computer internal audio (YouTube, Zoom, etc.) natively, without requiring external physical microphones or manual OS configurations.
+- **Solution:** Use Python with `pyaudiowpatch` to hook directly into the Windows WASAPI Loopback device.
 
 ---
 
-## 🛠️ Phase 1: Foundation (Stability & Performance)
+## 🛠️ Phase 1: High-Performance Local Database (Zero Latency)
+*Goal: Build an ultra-fast local "database" of ASL movement JSONs that uses minimal disk reads and consumes almost zero latency.*
 
+- [ ] **Python Backend Kinematics (Crucial!):** Update `dictionary_builder.py`. Instead of saving raw `x,y,z` points, implement a math function (using `SciPy`) to calculate the exact joint angles (**Quaternions**) required for a VRM skeleton.
+- [ ] **Minimal JSON Footprint:** Ensure the generated JSON files contain *only* the calculated Quaternions and truncate decimal precision (3-4 digits max) to drastically reduce file size and WebSocket transmission payloads.
 - [ ] **Refactor Data Factory Paths (Sharding):** Update `dictionary_builder.py` so that instead of saving to a flat `assets/jsons/` directory, it calculates an alphabetical sub-path (e.g., `assets/jsons/a/ap/apple.json`). This prevents OS-level directory scanning bottlenecks when scaling up to 40,000 files.
 - [ ] **Write a Data Migration Script:** Create a quick, one-time Python script to read all currently existing flat JSON files and move them into the new sharded folder structure automatically.
-- [ ] **Update Avatar Controller Paths:** Modify the disk-reading logic in `main.py` so that when the system looks for a word, it dynamically reconstructs the exact sharded path to locate the file instantly.
-- [ ] **Implement LRU Cache for Word Loading:** Isolate the specific function in `main.py` that reads the JSON file from the SSD. Wrap it using `@lru_cache(maxsize=500)` from the `functools` library to prevent repeated disk reads for the same words and eliminate micro-stutters.
-- [ ] **JSON Optimization & Minification:** Write a short side-script to process all JSON files. Truncate the decimal precision of the coordinates (keep only 3-4 digits instead of 15) to drastically reduce the file footprint and speed up memory/network loading.
+- [ ] **In-Memory LRU Cache:** In `main.py`, isolate the file-reading function and wrap it with `@lru_cache(maxsize=1000)` from `functools`. This ensures that a word loaded once never hits the hard drive again.
 - [ ] **Pre-load Common Vocabulary (Cache Warming):** Add a boot-up sequence in `main.py` that automatically triggers the read function for the top 100 most common English words. This warms up the RAM cache so the initial user experience has zero read latency.
 
+## 🎙️ Phase 2: Internal PC Audio Capture (Windows WASAPI)
+*Goal: Listen to the computer's internal audio (YouTube, Zoom) natively without needing a physical microphone.*
 
+- [ ] **Install WASAPI Package:** Run `pip install pyaudiowpatch` to replace standard `pyaudio`.
+- [ ] **Implement WASAPI Loopback:** Rewrite `live_audio_stream()` in `main.py` to explicitly locate and target the Windows WASAPI Loopback default output device.
+- [ ] **Voice Activity Detection (VAD):** Ensure the listener accurately detects silence in the computer audio stream to know when a sentence is finished.
+- [ ] **STT Processing:** Send the loopback audio buffer to Google Web Speech API (or a fast local model like Whisper later on) to retrieve English text.
 
-## 🎙️ Phase 2: Real-Time Speech-to-Text (Live STT) Integration
-*Goal: Replace manual typing with a microphone that detects when a sentence ends. (Fully autonomous).*
-- [X] **Install STT Dependencies:** Run `pip install SpeechRecognition pyaudio`.
-- [X] **Integrate Google STT (Producer Thread):** Create a new `live_audio_stream` background thread to replace `live_typing_stream` in `main.py`.
-- [X] **Voice Activity Detection (VAD):** Configure the system to wait for silence (end of sentence) before sending the audio buffer to the Google Web Speech API.
-- [X] **Queue Integration:** Verify the returned text successfully passes to `asl_translator.py` and the resulting ASL glosses are pushed into the `phrase_queue`.
+## 🧠 Phase 3: Fast Local NLP Translation (No Cloud API Delays)
+*Goal: Keep translation local and instantaneous for maximum performance.*
 
+- [ ] **Enhance Local Ruleset:** Expand `asl_rules.json` to handle more complex time-words, stop-words, and common idiom replacements.
+- [ ] **Refine `asl_translator.py`:** Optimize the regex parsing to maintain `O(1)` complexity while performing smarter sentence restructuring. *(Note: AI translation like Gemini Pro is paused to prioritize 0-latency performance).*
 
-
-## 🧠 Phase 3: Upgrading the "Brain" to Gemini Pro (NLP)
-*Goal: Replace hardcoded syntax rules with an advanced language model for accurate ASL Gloss translation.*
-- [ ] **Gemini Pro API Integration:** Create a new function in `asl_translator.py` to send the full transcribed sentence to the Gemini Pro API.
-- [ ] **System Prompt Engineering:** Use the prompt: *"You are an ASL translator. Convert the following English sentence to ASL Gloss strictly using Time-Topic-Comment structure. Return ONLY a Python list of strings"*.
-- [ ] **Security & Tier Limits:** Securely integrate the API key and manage requests to stay within the student tier limits.
-
-
-
-## 🔄 Phase 4: Just-In-Time (JIT) Data Generation
+## 🔄 Phase 4: Just-In-Time (JIT) Data Fetching
 *Goal: Handle dictionary misses without crashing the system or freezing the avatar.*
+
 - [ ] **Missing Word Detection:** Implement logic in `main.py` to detect when a translated word lacks a corresponding JSON file in `assets/jsons`.
 - [ ] **JIT Pipeline:** Open a background thread to run `download_videos.py` (fetch MP4) immediately followed by `dictionary_builder.py` (extract landmarks to JSON).
 - [ ] **Smooth Queue Management:** Ensure the main thread continues running smoothly (e.g., playing an "idle" animation) while waiting, and pushes the new JSON to the queue as soon as it's ready.
 
+## 🎮 Phase 5: Godot 4 & VRM Native Integration (Frontend)
+*Goal: Replace OpenCV/Unity with a high-performance Godot 4 native window acting as the transparent overlay.*
 
-
-## 🎞️ Phase 5: Mathematical Motion Smoothing (Interpolation)
-*Goal: Create fluid, natural movements and prevent robotic or jittery transitions.*
-- [ ] **Refine Linear Interpolation (LERP):** Enhance the transition calculations inside the main loop of `main.py` (between final coordinates of Word A and initial coordinates of Word B).
-- [ ] **Tune Transition Frames:** Experiment with generating 5-10 calculated frames so the avatar moves its hands smoothly between positions without looking robotic or jittery.
-
-
-
-## 🎮 Phase 6: Unity 3D Integration (Future Step)
-*Goal: Transition from the 2D OpenCV development environment to the final production build.*
-- [ ] **Await Lecturer Feedback:** Continue putting the Unity build aside until receiving an answer regarding best practices for integrating JSON data with Inverse Kinematics (IK).
-- [ ] **Stick to 2D Debugging:** Use the 2D OpenCV skeleton drawer for now to ensure the core logic, WebSockets, and data minification are rock-solid.
-- [ ] **Final C# Routing:** Once approved, route the WebSocket server to transmit the lightweight JSON coordinates to the C# receiver script in Unity.
+- [ ] **Godot Project Setup:** Initialize a Godot 4 project and install the `godot-vrm` addon.
+- [ ] **Transparent OS Window:** Configure the Godot `DisplayServer` settings: `transparent_bg = true`, `borderless = true`, and `always_on_top = true`. Handle mouse passthrough (click-through) so the user can interact with apps behind the avatar.
+- [ ] **WebSocket Client:** Create a GDScript `WebSocketPeer` script to connect to `main.py` (`ws://localhost:8765`).
+- [ ] **Quaternion Application:** Write a script to take the incoming WebSocket JSON (Quaternions) and apply them directly to the VRM model's bones.
+- [ ] **Spherical Linear Interpolation (SLERP):** Utilize Godot's built-in `Quaternion.slerp()` inside the `_process(delta)` loop. This will smoothly interpolate between the received JSON keyframes and eliminate any jitter.
