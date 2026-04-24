@@ -22,7 +22,9 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 # The specific words needed to download
 WORDS = [
-    
+    "sea", "beautiful", "today", "i", "going", "tomorrow", "yesterday", 
+    "saw", "bird", "you", "work", "now", "morning", "cold", "sleep", 
+    "night", "see", "later", "fly", "tree", "happy", "he", "home", "soon"
 ]
 
 def fetch_and_download(word):

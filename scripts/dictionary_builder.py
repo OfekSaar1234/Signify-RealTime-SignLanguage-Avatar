@@ -102,9 +102,9 @@ class DictionaryBuilder:
             
         return optimized_points
 
-    def process_video_to_json(self, word_name: str, num_keyframes: int = 15) -> None:
+    def process_video_to_json(self, word_name: str, num_keyframes: int = 30) -> None:
         """
-        Reads an MP4 video file and extracts specific "Key Poses" (e.g., 15 frames)
+        Reads an MP4 video file and extracts specific "Key Poses" (e.g., 30 frames)
         to optimize the animation data for Unity IK Interpolation, capturing complex movement.
         
         :param word_name: The name of the word (without extension) to process.
@@ -191,9 +191,9 @@ if __name__ == "__main__":
             continue
             
         if os.path.exists(video_path):
-            print(f"[PROCESSING] Extracting {15} key poses for: '{word}'...")
-            # Passing 15 extracts enough keyframes to capture complex motion in 3-second videos.
-            tool.process_video_to_json(word, num_keyframes=15)
+            print(f"[PROCESSING] Extracting {30} key poses for: '{word}'...")
+            # Passing 30 extracts enough keyframes to capture complex motion smoothly.
+            tool.process_video_to_json(word, num_keyframes=30)
         else:
             print(f"[WARNING] Skipping '{word}': Could not find {video_path}")
             missing_mp4s.append(word)
