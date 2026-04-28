@@ -1,7 +1,9 @@
 {
   "_comment_intro": "Main configuration file. Standard JSON doesn't support comments, so we use _comment fields as notes.",
   "input_mode": "typing",
-  "_comment_input_mode": "Choose your primary input method. Options: 'typing' (keyboard) OR 'audio_loopback' (Live STT).",
+  "_comment_input_mode": "Choose your primary input method. Options: 'typing', 'audio_loopback', OR 'dual_audio'.",
+  "output_mode": "virtual_cam",
+  "_comment_output_mode": "Choose your rendering destination. Options: 'opencv' (local window) OR 'virtual_cam' (OBS Camera for Zoom).",
   "display": {
     "height": 720,
     "width": 1280

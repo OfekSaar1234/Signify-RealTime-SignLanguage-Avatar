@@ -6,10 +6,11 @@ from utils.logger import logger
 from core.translator import ASLTranslator
 from core.animator import Animator
 from output.renderer import OpenCVRenderer
+from output.virtual_cam import VirtualCamStreamer
 from output.streamer import WebSocketStreamer
 
 # Input mechanisms
-from audio.capture import SystemAudioCapture
+from audio.dual_capture import DualAudioCapture
 from audio.transcriber import AudioTranscriber
 from core.typing_input import TypingInput
 
@@ -51,7 +52,11 @@ if __name__ == "__main__":
         )
         streamer.start()
 
-    renderer = OpenCVRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
+    output_mode = app_settings.get("output_mode", "opencv")
+    if output_mode == "virtual_cam":
+        renderer = VirtualCamStreamer(frame_queue, is_running_callback, app_settings, streamer=streamer)
+    else:
+        renderer = OpenCVRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
     
     # 2. Core Logic
     animator = Animator(gloss_queue, frame_queue, is_running_callback, app_settings)
@@ -63,11 +68,11 @@ if __name__ == "__main__":
     # 3. Inputs
     input_mode = app_settings.get("input_mode", "typing")
     
-    if input_mode == "audio_loopback":
+    if input_mode == "audio_loopback" or input_mode == "dual_audio":
         transcriber = AudioTranscriber(speech_audio_queue, text_queue, is_running_callback)
         transcriber.start()
         
-        capture = SystemAudioCapture(speech_audio_queue, is_running_callback, config=app_settings.get("audio", {}))
+        capture = DualAudioCapture(speech_audio_queue, is_running_callback, config=app_settings.get("audio", {}))
         capture.start()
     else:
         typing_input = TypingInput(text_queue, is_running_callback)

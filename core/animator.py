@@ -8,7 +8,7 @@ from utils.logger import logger
 
 class Animator:
     """
-    Consumes ASL glosses from a queue, loads the corresponding 3D JSON animation files,
+    Consumes ASL glosses from a queue, loads the corresponding 2D JSON animation files,
     interpolates between frames for smooth transitions, and outputs discrete frame data
     into a frame queue to be consumed by renderers or streamers.
     """

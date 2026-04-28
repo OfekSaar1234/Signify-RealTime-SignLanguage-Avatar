@@ -1,3 +1,0 @@
-- [x] Shard JSON folders (e.g., `a/ap/apple.json`) to prevent OS-level read bottlenecks.
-- [x] Implement `@lru_cache` to eliminate repeated hard-drive reads.
-- [x] Warm-up cache on boot (auto-load top 100 common ASL words into RAM).
