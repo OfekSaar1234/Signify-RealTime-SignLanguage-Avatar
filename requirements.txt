@@ -1,0 +1,8 @@
+opencv-python
+numpy
+websockets
+SpeechRecognition
+pyaudiowpatch
+mediapipe
+requests
+beautifulsoup4

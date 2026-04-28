@@ -112,7 +112,13 @@ class DictionaryBuilder:
         """
         # Using the smart paths we defined above
         video_path = os.path.join(MP4_DIR, f"{word_name}.mp4")
-        json_output_path = os.path.join(JSON_DIR, f"{word_name}.json")
+        
+        # Shard JSON folders
+        prefix = word_name[:2] if len(word_name) >= 2 else word_name
+        first_letter = word_name[0] if len(word_name) > 0 else ""
+        shard_dir = os.path.join(JSON_DIR, first_letter, prefix)
+        os.makedirs(shard_dir, exist_ok=True)
+        json_output_path = os.path.join(shard_dir, f"{word_name}.json")
         
         video_capture = cv2.VideoCapture(video_path)
         
@@ -183,7 +189,12 @@ if __name__ == "__main__":
     
     for word in words_to_process:
         video_path = os.path.join(MP4_DIR, f"{word}.mp4")
-        json_path = os.path.join(JSON_DIR, f"{word}.json")
+        
+        # Shard JSON folders
+        prefix = word[:2] if len(word) >= 2 else word
+        first_letter = word[0] if len(word) > 0 else ""
+        shard_dir = os.path.join(JSON_DIR, first_letter, prefix)
+        json_path = os.path.join(shard_dir, f"{word}.json")
         
         # Smart Skip: If the JSON file is already ready, do not generate it again
         if os.path.exists(json_path):

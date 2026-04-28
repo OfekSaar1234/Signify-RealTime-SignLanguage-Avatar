@@ -22,9 +22,16 @@ os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 # The specific words needed to download
 WORDS = [
-    "sea", "beautiful", "today", "i", "going", "tomorrow", "yesterday", 
-    "saw", "bird", "you", "work", "now", "morning", "cold", "sleep", 
-    "night", "see", "later", "fly", "tree", "happy", "he", "home", "soon"
+    "hello", "goodbye", "yes", "no", "please", "thank", "you", "sorry", "excuse", "me",
+    "help", "who", "what", "where", "when", "why", "how", "stop", "go", "come",
+    "more", "finish", "eat", "drink", "sleep", "want", "need", "like", "love", "hate",
+    "happy", "sad", "angry", "tired", "good", "bad", "beautiful", "ugly", "big", "small",
+    "hot", "cold", "day", "night", "morning", "afternoon", "evening", "today", "tomorrow", "yesterday",
+    "now", "later", "time", "home", "work", "school", "friend", "family", "mother", "father",
+    "brother", "sister", "son", "daughter", "man", "woman", "boy", "girl", "name", "age",
+    "color", "red", "blue", "green", "yellow", "black", "white", "number", "one", "two",
+    "three", "four", "five", "six", "seven", "eight", "nine", "ten", "money", "buy",
+    "sell", "pay", "cost", "cheap", "expensive", "food", "water", "apple", "book", "car"
 ]
 
 def fetch_and_download(word):
