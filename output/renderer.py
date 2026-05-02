@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import queue
 from utils.logger import logger
+from utils.drawing import draw_skeleton
 
 class OpenCVRenderer:
     """
@@ -54,7 +55,7 @@ class OpenCVRenderer:
                 self.display_canvas.fill(0)
                 
                 if frame_data:
-                    self._draw_points(frame_data)
+                    draw_skeleton(self.display_canvas, frame_data, self.width, self.height, self.scale, self.offset, self.BODY_PART_COLORS)
                     
                 cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 cv2.imshow("Signify - Continuous Player", self.display_canvas)
@@ -71,15 +72,4 @@ class OpenCVRenderer:
         cv2.destroyAllWindows()
         logger.info("OpenCV window destroyed.")
 
-    def _draw_points(self, frame_data: dict):
-        for key, color in self.BODY_PART_COLORS.items():
-            if key in frame_data:
-                points_list = frame_data[key]
-                for point_coordinates in points_list:
-                    x_float = (point_coordinates[0] * self.scale) + self.offset
-                    y_float = (point_coordinates[1] * self.scale) + self.offset
-                    
-                    center_x = int(x_float * self.width)
-                    center_y = int(y_float * self.height)
-                    
-                    cv2.circle(self.display_canvas, (center_x, center_y), 2, color, -1)
+    # Removed _draw_points in favor of draw_skeleton

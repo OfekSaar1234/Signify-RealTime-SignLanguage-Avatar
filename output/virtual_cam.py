@@ -4,6 +4,7 @@ import queue
 import threading
 import time
 from utils.logger import logger
+from utils.drawing import draw_skeleton
 
 try:
     import pyvirtualcam
@@ -65,17 +66,11 @@ class VirtualCamStreamer:
                 canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
                 
                 while self.is_running_callback():
-                    # If the queue is backing up, we read faster to prevent delay
                     try:
                         frame_payload = self.frame_queue.get(timeout=1.0 / self.fps)
                         frame_data = frame_payload.get("data", {})
                         self.last_label = frame_payload.get("label", self.last_label)
-                        
-                        # Catch up to prevent lag
-                        while self.frame_queue.qsize() > 5:
-                            frame_payload = self.frame_queue.get_nowait()
-                            frame_data = frame_payload.get("data", {})
-                            self.last_label = frame_payload.get("label", self.last_label)
+                        wait_ms = frame_payload.get("wait_ms", 33)
                         
                         # Broadcast the raw frame data if a websocket streamer is attached
                         if self.streamer and frame_data:
@@ -83,20 +78,23 @@ class VirtualCamStreamer:
                             
                         canvas.fill(0)
                         if frame_data:
-                            self._draw_points(canvas, frame_data)
+                            draw_skeleton(canvas, frame_data, self.width, self.height, self.scale, self.offset, self.RGB_COLORS)
                             self.last_drawn_canvas = canvas.copy()
                         else:
                             canvas = self.last_drawn_canvas.copy()
                     except queue.Empty:
                         # Queue empty, use the last frame
                         canvas = self.last_drawn_canvas.copy()
+                        wait_ms = int(1000 / self.fps)
                         
                     # Add text to the screen
                     cv2.putText(canvas, self.last_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                         
-                    # Send to the virtual camera driver
-                    cam.send(canvas)
-                    cam.sleep_until_next_frame()
+                    # Send to the virtual camera driver for the intended duration
+                    frames_to_send = max(1, round(wait_ms / (1000.0 / self.fps)))
+                    for _ in range(frames_to_send):
+                        cam.send(canvas)
+                        cam.sleep_until_next_frame()
                     
         except Exception as e:
             logger.error(f"Failed to start Virtual Camera: {e}")
@@ -104,15 +102,4 @@ class VirtualCamStreamer:
             
         logger.info("Virtual Camera stream ended.")
 
-    def _draw_points(self, canvas: np.ndarray, frame_data: dict):
-        for key, color in self.RGB_COLORS.items():
-            if key in frame_data:
-                points_list = frame_data[key]
-                for point_coordinates in points_list:
-                    x_float = (point_coordinates[0] * self.scale) + self.offset
-                    y_float = (point_coordinates[1] * self.scale) + self.offset
-                    
-                    center_x = int(x_float * self.width)
-                    center_y = int(y_float * self.height)
-                    
-                    cv2.circle(canvas, (center_x, center_y), 2, color, -1)
+    # Removed _draw_points in favor of draw_skeleton

@@ -74,7 +74,7 @@ class DictionaryBuilder:
         # Normalize the skeleton so the shoulder width is always exactly 0.5 units
         return 0.5 / shoulder_width
 
-    def convert_landmarks_to_list(self, landmarks_object, anchor=(0.0, 0.0, 0.0), scale=1.0) -> list:
+    def convert_landmarks_to_list(self, landmarks_object, anchor=(0.0, 0.0, 0.0), scale=1.0, target_indices=None) -> list:
         """
         Converts a MediaPipe landmarks object into a standard Python list of coordinates.
         Subtracts the anchor coordinates to make all points relative to the chest.
@@ -82,7 +82,8 @@ class DictionaryBuilder:
         :param landmarks_object: The raw landmark data returned by MediaPipe.
         :param anchor: The (x, y, z) tuple representing the center of the chest.
         :param scale: The multiplier to normalize the size of the skeleton.
-        :return: A list of [x, y, z] coordinates rounded to 5 decimal places.
+        :param target_indices: An optional list of specific indices to extract in order.
+        :return: A list of [x, y, z] coordinates rounded to 3 decimal places.
         """
         if not landmarks_object: 
             return []
@@ -90,13 +91,23 @@ class DictionaryBuilder:
         optimized_points = []
         anchor_x, anchor_y, anchor_z = anchor
         
+        if target_indices is not None:
+            for idx in target_indices:
+                if idx < len(landmarks_object.landmark):
+                    landmark = landmarks_object.landmark[idx]
+                    x = round((landmark.x - anchor_x) * scale, 3)
+                    y = round((landmark.y - anchor_y) * scale, 3)
+                    z = round((landmark.z - anchor_z) * scale, 3)
+                    optimized_points.append([x, y, z])
+            return optimized_points
+            
         for landmark in landmarks_object.landmark:
             # Subtract anchor for relative position, then multiply by scale
             # GODOT COORDINATE MAPPING:
             # X is unchanged. Y is inverted (MediaPipe + is Down, Godot + is Up).
-            x = round((landmark.x - anchor_x) * scale, 5)
-            y = round((landmark.y - anchor_y) * scale, 5)
-            z = round((landmark.z - anchor_z) * scale, 5)
+            x = round((landmark.x - anchor_x) * scale, 3)
+            y = round((landmark.y - anchor_y) * scale, 3)
+            z = round((landmark.z - anchor_z) * scale, 3)
             
             optimized_points.append([x, y, z])
             
@@ -150,8 +161,17 @@ class DictionaryBuilder:
                 anchor = self.get_anchor_point(ai_results.pose_landmarks)
                 scale = self.get_scale_factor(ai_results.pose_landmarks)
                 
+                # Face Contours
+                JAW_INDICES = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109]
+                LIP_INDICES = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185]
+                REYE_INDICES = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
+                LEYE_INDICES = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
+                
                 current_frame_data = {
-                    "f": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale),
+                    "fj": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale, target_indices=JAW_INDICES),
+                    "fl": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale, target_indices=LIP_INDICES),
+                    "fre": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale, target_indices=REYE_INDICES),
+                    "fle": self.convert_landmarks_to_list(ai_results.face_landmarks, anchor, scale, target_indices=LEYE_INDICES),
                     "p": self.convert_landmarks_to_list(ai_results.pose_landmarks, anchor, scale),
                     "l": self.convert_landmarks_to_list(ai_results.left_hand_landmarks, anchor, scale),
                     "r": self.convert_landmarks_to_list(ai_results.right_hand_landmarks, anchor, scale)
@@ -196,8 +216,9 @@ if __name__ == "__main__":
         shard_dir = os.path.join(JSON_DIR, first_letter, prefix)
         json_path = os.path.join(shard_dir, f"{word}.json")
         
-        # Smart Skip: If the JSON file is already ready, do not generate it again
-        if os.path.exists(json_path):
+        # Force Rebuild: We want to overwrite with our newly compressed JSONs
+        FORCE_REBUILD = True
+        if not FORCE_REBUILD and os.path.exists(json_path):
             print(f"[SKIP] '{word}.json' already exists. Saving time!")
             continue
             

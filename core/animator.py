@@ -42,13 +42,40 @@ class Animator:
         # Fallback to old path just in case
         old_file_path = os.path.join(base_dir, "assets", "jsons", f"{word_lower}.json")
         
+        sequence = None
         if os.path.exists(file_path):
             with open(file_path, 'r') as f:
-                return json.load(f)
+                sequence = json.load(f)
         elif os.path.exists(old_file_path):
             with open(old_file_path, 'r') as f:
-                return json.load(f)
-        return None
+                sequence = json.load(f)
+                
+        # Perform Missing Frame Imputation (Gap Filling)
+        if sequence:
+            for key in ["f", "fj", "fl", "fre", "fle", "l", "r"]:
+                self._fill_missing_landmarks(sequence, key)
+                
+        return sequence
+
+    def _fill_missing_landmarks(self, sequence: list, key: str):
+        """Linearly interpolates any missing frames (tracking drops) in the sequence."""
+        n = len(sequence)
+        last_valid_idx = -1
+        
+        # 1. Interpolate intermediate gaps
+        for i in range(n):
+            if sequence[i].get(key):
+                if last_valid_idx != -1 and i - last_valid_idx > 1:
+                    start_pts = sequence[last_valid_idx][key]
+                    end_pts = sequence[i][key]
+                    gap_size = i - last_valid_idx
+                    for j in range(last_valid_idx + 1, i):
+                        factor = (j - last_valid_idx) / gap_size
+                        smoothed = []
+                        for pt_s, pt_e in zip(start_pts, end_pts):
+                            smoothed.append([pt_s[k] + (pt_e[k] - pt_s[k]) * factor for k in range(3)])
+                        sequence[j][key] = smoothed
+                last_valid_idx = i
 
     def warm_up_cache(self):
         """Pre-loads common ASL words into RAM."""
@@ -70,12 +97,14 @@ class Animator:
 
     def _calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
         interpolated_result = {}
-        for key in ["f", "p", "l", "r"]:
+        # Make sure to interpolate the new Face Contour keys as well!
+        for key in ["f", "fj", "fl", "fre", "fle", "p", "l", "r"]:
             points_a = start_frame.get(key, [])
             points_b = end_frame.get(key, [])
             
+            # If a feature is missing in either frame, let it vanish instead of freezing in place
             if not points_a or not points_b: 
-                interpolated_result[key] = points_b if points_b else points_a
+                interpolated_result[key] = []
                 continue
             
             smoothed_points = []
