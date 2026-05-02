@@ -25,10 +25,10 @@ class VirtualCamStreamer:
         display_settings = app_settings.get("display", {"height": 720, "width": 1280})
         self.height = display_settings.get("height", 720)
         self.width = display_settings.get("width", 1280)
-        self.fps = 30
+        self.fps = display_settings.get("fps", 60)
         
-        self.scale = 0.35
-        self.offset = 0.5
+        self.scale = display_settings.get("scale", 0.35)
+        self.offset = display_settings.get("offset", 0.5)
         
         self.BODY_PART_COLORS = self._load_colors(app_settings)
         # pyvirtualcam expects RGB, but if the original settings were BGR (OpenCV standard),
@@ -37,6 +37,7 @@ class VirtualCamStreamer:
         
         # We need to maintain the last frame data if the animator hasn't yielded a new one
         self.last_drawn_canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
+        self.last_label = "Waiting..."
 
     def _load_colors(self, settings):
         colors = {k: tuple(v) for k, v in settings.get("colors", {}).items()}
@@ -64,10 +65,17 @@ class VirtualCamStreamer:
                 canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
                 
                 while self.is_running_callback():
-                    # We try to get a new frame. If none, we redraw the last one to maintain 30FPS for Zoom
+                    # If the queue is backing up, we read faster to prevent delay
                     try:
                         frame_payload = self.frame_queue.get(timeout=1.0 / self.fps)
                         frame_data = frame_payload.get("data", {})
+                        self.last_label = frame_payload.get("label", self.last_label)
+                        
+                        # Catch up to prevent lag
+                        while self.frame_queue.qsize() > 5:
+                            frame_payload = self.frame_queue.get_nowait()
+                            frame_data = frame_payload.get("data", {})
+                            self.last_label = frame_payload.get("label", self.last_label)
                         
                         # Broadcast the raw frame data if a websocket streamer is attached
                         if self.streamer and frame_data:
@@ -82,6 +90,9 @@ class VirtualCamStreamer:
                     except queue.Empty:
                         # Queue empty, use the last frame
                         canvas = self.last_drawn_canvas.copy()
+                        
+                    # Add text to the screen
+                    cv2.putText(canvas, self.last_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                         
                     # Send to the virtual camera driver
                     cam.send(canvas)

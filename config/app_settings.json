@@ -1,17 +1,27 @@
 {
   "_comment_intro": "Main configuration file. Standard JSON doesn't support comments, so we use _comment fields as notes.",
-  "input_mode": "typing",
+  "input_mode": "dual_audio",
   "_comment_input_mode": "Choose your primary input method. Options: 'typing', 'audio_loopback', OR 'dual_audio'.",
-  "output_mode": "virtual_cam",
+  "output_mode": "opencv",
   "_comment_output_mode": "Choose your rendering destination. Options: 'opencv' (local window) OR 'virtual_cam' (OBS Camera for Zoom).",
   "display": {
     "height": 720,
-    "width": 1280
+    "width": 1280,
+    "fps": 60,
+    "scale": 0.35,
+    "offset": 0.5
   },
-  "_comment_display": "The resolution of the local 2D Avatar rendering canvas.",
+  "_comment_display": "Settings for rendering the Avatar canvas.",
+  "audio": {
+    "chunk_size": 4096,
+    "silence_threshold_rms": 500,
+    "silence_timeout_sec": 0.5,
+    "max_recording_sec": 5.0
+  },
+  "_comment_audio": "Audio capture settings. Adjust silence_timeout_sec to change how aggressively speech is chunked into phrases.",
   "playback": {
-    "speed_ms": 60,
-    "transition_frames": 10,
+    "speed_ms": 33,
+    "transition_frames": 5,
     "interpolation_frames": 2
   },
   "_comment_playback": "speed_ms defines the time between keyframes (60ms ~ 16.7FPS). transition_frames controls smooth frames injected between distinct signs. interpolation_frames injects smooth auto-completed frames between standard animation frames.",

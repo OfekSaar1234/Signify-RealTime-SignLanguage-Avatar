@@ -18,8 +18,8 @@ class OpenCVRenderer:
         self.width = display_settings.get("width", 1280)
         
         # Scaling and offsets
-        self.scale = 0.35
-        self.offset = 0.5
+        self.scale = display_settings.get("scale", 0.35)
+        self.offset = display_settings.get("offset", 0.5)
         
         self.display_canvas = np.zeros((self.height, self.width, 3), dtype=np.uint8)
         self.BODY_PART_COLORS = self._load_colors(app_settings)
