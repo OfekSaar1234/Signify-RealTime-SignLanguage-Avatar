@@ -6,3 +6,5 @@ pyaudiowpatch
 mediapipe
 requests
 beautifulsoup4
+customtkinter
+pillow
