@@ -2,8 +2,8 @@
   "_comment_intro": "Main configuration file. Standard JSON doesn't support comments, so we use _comment fields as notes.",
   "input_mode": "typing",
   "_comment_input_mode": "Choose your primary input method. Options: 'typing', 'audio_loopback', OR 'dual_audio'.",
-  "output_mode": "opencv",
-  "_comment_output_mode": "Choose your rendering destination. Options: 'opencv' (local window) OR 'virtual_cam' (OBS Camera for Zoom).",
+  "output_mode": "electron",
+  "_comment_output_mode": "Choose your rendering destination. Options: 'opencv' (local window), 'virtual_cam' (OBS Camera for Zoom), OR 'electron' (Hologram UI).",
   "display": {
     "height": 720,
     "width": 1280,
@@ -20,13 +20,13 @@
   },
   "_comment_audio": "Audio capture settings. Adjust silence_timeout_sec to change how aggressively speech is chunked into phrases.",
   "playback": {
-    "speed_ms": 33,
+    "speed_ms": 15,
     "transition_frames": 5,
     "interpolation_frames": 4
   },
   "_comment_playback": "speed_ms defines the time between keyframes (60ms ~ 16.7FPS). transition_frames controls smooth frames injected between distinct signs. interpolation_frames injects smooth auto-completed frames between standard animation frames.",
   "network": {
-    "enable_websocket": false,
+    "enable_websocket": true,
     "ws_host": "localhost",
     "ws_port": 8765
   },

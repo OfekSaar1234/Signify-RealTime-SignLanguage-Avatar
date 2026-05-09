@@ -40,6 +40,10 @@ class OpenCVRenderer:
         """
         logger.info("OpenCV Renderer started. Press 'q' on the window to quit.")
         
+        window_name = "Signify - Continuous Player"
+        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty(window_name, cv2.WND_PROP_TOPMOST, 1)
+        
         while self.is_running_callback():
             try:
                 # Wait briefly. If queue empty, spin to keep OpenCV UI responsive.
@@ -58,7 +62,7 @@ class OpenCVRenderer:
                     draw_skeleton(self.display_canvas, frame_data, self.width, self.height, self.scale, self.offset, self.BODY_PART_COLORS)
                     
                 cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                cv2.imshow("Signify - Continuous Player", self.display_canvas)
+                cv2.imshow(window_name, self.display_canvas)
                 
                 if cv2.waitKey(wait_ms) & 0xFF == ord('q'):
                     logger.info("Quit signal received from UI.")

@@ -8,6 +8,7 @@ from core.animator import Animator
 from output.renderer import OpenCVRenderer
 from output.virtual_cam import VirtualCamStreamer
 from output.streamer import WebSocketStreamer
+from output.headless import HeadlessRenderer
 
 # Input mechanisms
 from audio.dual_capture import DualAudioCapture
@@ -53,8 +54,19 @@ if __name__ == "__main__":
         streamer.start()
 
     output_mode = app_settings.get("output_mode", "opencv")
+    
+    # Force websocket for electron
+    if output_mode == "electron" and not streamer:
+        streamer = WebSocketStreamer(
+            host=network_cfg.get("ws_host", "localhost"),
+            port=network_cfg.get("ws_port", 8765)
+        )
+        streamer.start()
+
     if output_mode == "virtual_cam":
         renderer = VirtualCamStreamer(frame_queue, is_running_callback, app_settings, streamer=streamer)
+    elif output_mode == "electron":
+        renderer = HeadlessRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
     else:
         renderer = OpenCVRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
     
