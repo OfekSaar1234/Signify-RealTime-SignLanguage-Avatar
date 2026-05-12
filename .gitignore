@@ -3,3 +3,10 @@ __pycache__/
 logs/
 .vscode/
 *.pyc
+
+# AWS
+*.pem
+
+# Local Data Storage
+assets/jsons/
+*.mp4

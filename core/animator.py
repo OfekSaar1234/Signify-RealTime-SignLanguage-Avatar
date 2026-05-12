@@ -3,6 +3,7 @@ import json
 import queue
 import threading
 import time
+import requests
 from functools import lru_cache
 from utils.logger import logger
 
@@ -22,6 +23,8 @@ class Animator:
         self.transition_frames = playback_settings.get("transition_frames", 5)
         self.interpolation_frames = playback_settings.get("interpolation_frames", 2)
         
+        self.session = requests.Session()
+        
         self.last_frame_data = None
         self.idle_sequence = self.load_json_sequence("idle")
         self.idle_frame_idx = 0
@@ -33,22 +36,21 @@ class Animator:
 
     @lru_cache(maxsize=128)
     def load_json_sequence(self, word: str) -> list:
-        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         word_lower = word.lower()
-        prefix = word_lower[:2] if len(word_lower) >= 2 else word_lower
-        first_letter = word_lower[0] if len(word_lower) > 0 else ""
-        file_path = os.path.join(base_dir, "assets", "jsons", first_letter, prefix, f"{word_lower}.json")
-        
-        # Fallback to old path just in case
-        old_file_path = os.path.join(base_dir, "assets", "jsons", f"{word_lower}.json")
+        url = f"https://signify-asl-dictionary-v1.s3.amazonaws.com/dictionary/{word_lower}.json"
         
         sequence = None
-        if os.path.exists(file_path):
-            with open(file_path, 'r') as f:
-                sequence = json.load(f)
-        elif os.path.exists(old_file_path):
-            with open(old_file_path, 'r') as f:
-                sequence = json.load(f)
+        try:
+            response = self.session.get(url, timeout=2)
+            if response.status_code == 200:
+                sequence = response.json()
+            elif response.status_code == 404:
+                # logger.warning(f"S3 returned 404 Not Found for word: {word}")
+                pass
+            else:
+                logger.warning(f"Failed to fetch {word} from S3. Status: {response.status_code}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error fetching {word} from S3: {e}")
                 
         # Perform Missing Frame Imputation (Gap Filling)
         if sequence:
@@ -79,21 +81,8 @@ class Animator:
 
     def warm_up_cache(self):
         """Pre-loads common ASL words into RAM."""
-        common_words = [
-            "hello", "goodbye", "yes", "no", "please", "thank", "you", "sorry", "excuse", "me",
-            "help", "who", "what", "where", "when", "why", "how", "stop", "go", "come",
-            "more", "finish", "eat", "drink", "sleep", "want", "need", "like", "love", "hate",
-            "happy", "sad", "angry", "tired", "good", "bad", "beautiful", "ugly", "big", "small",
-            "hot", "cold", "day", "night", "morning", "afternoon", "evening", "today", "tomorrow", "yesterday",
-            "now", "later", "time", "home", "work", "school", "friend", "family", "mother", "father",
-            "brother", "sister", "son", "daughter", "man", "woman", "boy", "girl", "name", "age",
-            "color", "red", "blue", "green", "yellow", "black", "white", "number", "one", "two",
-            "three", "four", "five", "six", "seven", "eight", "nine", "ten", "money", "buy",
-            "sell", "pay", "cost", "cheap", "expensive", "food", "water", "apple", "book", "car"
-        ]
-        for word in common_words:
-            self.load_json_sequence(word)
-        logger.info("Animator cache warmed up with top 100 ASL words.")
+        # Temporarily disabled until the full dictionary is uploaded to S3
+        logger.info("Cache warmup disabled pending full dictionary upload.")
 
     def _calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
         interpolated_result = {}

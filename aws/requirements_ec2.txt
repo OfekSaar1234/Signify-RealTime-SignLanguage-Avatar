@@ -1,0 +1,6 @@
+# Minimal dependencies for EC2 Cloud Pipeline ONLY
+opencv-python-headless
+mediapipe
+requests
+beautifulsoup4
+boto3
