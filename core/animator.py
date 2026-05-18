@@ -41,16 +41,21 @@ class Animator:
         
         sequence = None
         try:
+            logger.debug(f"[S3 GET] Fetching: {url}")
+            t0 = time.time()
             response = self.session.get(url, timeout=2)
+            elapsed_ms = (time.time() - t0) * 1000
+            
             if response.status_code == 200:
+                logger.debug(f"[S3 RESP] 200 OK for '{word}' ({elapsed_ms:.0f}ms)")
                 sequence = response.json()
             elif response.status_code == 404:
-                # logger.warning(f"S3 returned 404 Not Found for word: {word}")
+                logger.warning(f"[S3 RESP] 404 Not Found for '{word}' ({elapsed_ms:.0f}ms)")
                 pass
             else:
-                logger.warning(f"Failed to fetch {word} from S3. Status: {response.status_code}")
+                logger.warning(f"[S3 RESP] {response.status_code} Error for '{word}' ({elapsed_ms:.0f}ms)")
         except requests.exceptions.RequestException as e:
-            logger.error(f"Network error fetching {word} from S3: {e}")
+            logger.error(f"[S3 ERROR] Network error fetching '{word}': {e}")
                 
         # Perform Missing Frame Imputation (Gap Filling)
         if sequence:

@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.98 0.01 260;
+    --foreground: 0.25 0.04 260;
+    --card: 1 0 0;
+    --card-foreground: 0.25 0.04 260;
+    --popover: 1 0 0;
+    --popover-foreground: 0.25 0.04 260;
+    --primary: 0.5 0.15 260;
+    --primary-foreground: 0.98 0.01 260;
+    --secondary: 0.95 0.01 260;
+    --secondary-foreground: 0.3 0.05 260;
+    --muted: 0.92 0.01 260;
+    --muted-foreground: 0.4 0.05 260;
+    --accent: 0.9 0.03 260;
+    --accent-foreground: 0.2 0.05 260;
+    --destructive: 0.6 0.2 25;
+    --destructive-foreground: 0.98 0.01 260;
+    --border: 0.9 0.02 260;
+    --input: 0.9 0.02 260;
+    --ring: 0.5 0.15 260;
+    --radius: 0.5rem;
+  }
+  
+  .dark {
+    --background: 0.12 0.04 250;
+    --foreground: 0.95 0.01 260;
+    --card: 0.2 0.01 260;
+    --card-foreground: 0.95 0.01 260;
+    --popover: 0.2 0.01 260;
+    --popover-foreground: 0.95 0.01 260;
+    --primary: 0.85 0.12 90; /* Crisp warm accent */
+    --primary-foreground: 0.18 0.01 260;
+    --secondary: 0.25 0.02 260;
+    --secondary-foreground: 0.9 0.01 260;
+    --muted: 0.22 0.01 260;
+    --muted-foreground: 0.6 0.02 260;
+    --accent: 0.25 0.02 260;
+    --accent-foreground: 0.95 0.01 260;
+    --destructive: 0.5 0.2 25;
+    --destructive-foreground: 0.95 0.01 260;
+    --border: 0.25 0.02 260;
+    --input: 0.25 0.02 260;
+    --ring: 0.85 0.12 90;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* Fluid Typography Clamps */
+  h1, .text-fluid-1 {
+    font-size: clamp(2.5rem, 5vw + 1rem, 5rem);
+    line-height: 1.1;
+    letter-spacing: -0.04em;
+    @apply font-display font-bold;
+  }
+  h2, .text-fluid-2 {
+    font-size: clamp(2rem, 4vw + 1rem, 3.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    @apply font-display font-semibold;
+  }
+  h3, .text-fluid-3 {
+    font-size: clamp(1.5rem, 3vw + 0.5rem, 2.5rem);
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    @apply font-display font-medium;
+  }
+}
+
+/* Utilities for premium design */
+.blur-backdrop {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.subtle-border {
+  border: 1px solid color-mix(in oklch, currentColor 10%, transparent);
+}
+
+/* Staggered load utilities */
+.reveal-on-load {
+  opacity: 0;
+  transform: translateY(20px);
+  animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+
+/* Remove previous text-glow "AI slop" styles */

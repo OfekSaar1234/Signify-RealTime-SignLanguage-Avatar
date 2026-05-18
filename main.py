@@ -64,10 +64,10 @@ if __name__ == "__main__":
         streamer.start()
 
     if output_mode == "virtual_cam":
+        logger.info("Initializing Output: Virtual Camera")
         renderer = VirtualCamStreamer(frame_queue, is_running_callback, app_settings, streamer=streamer)
-    elif output_mode == "electron":
-        renderer = HeadlessRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
     else:
+        logger.info("Initializing Output: OpenCV Window")
         renderer = OpenCVRenderer(frame_queue, is_running_callback, app_settings, streamer=streamer)
     
     # 2. Core Logic
@@ -81,12 +81,14 @@ if __name__ == "__main__":
     input_mode = app_settings.get("input_mode", "typing")
     
     if input_mode == "audio_loopback" or input_mode == "dual_audio":
+        logger.info(f"Initializing Input: Audio Capture ({input_mode})")
         transcriber = AudioTranscriber(speech_audio_queue, text_queue, is_running_callback)
         transcriber.start()
         
         capture = DualAudioCapture(speech_audio_queue, is_running_callback, config=app_settings.get("audio", {}))
         capture.start()
     else:
+        logger.info("Initializing Input: Manual Typing")
         typing_input = TypingInput(text_queue, is_running_callback)
         typing_input.start()
 
