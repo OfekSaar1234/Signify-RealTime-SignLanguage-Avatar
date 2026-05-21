@@ -1,18 +1,25 @@
-import speech_recognition as sr
+import os
+import requests
+from dotenv import load_dotenv
 import threading
 import queue
 from utils.logger import logger
 
+load_dotenv()
+
 class AudioTranscriber:
     """
     Consumes raw audio segments from a queue and transcribes them into text using
-    the Google Web Speech API. Outputs the transcribed text to the next queue.
+    the Deepgram API. Outputs the transcribed text to the next queue.
     """
     def __init__(self, speech_queue: queue.Queue, text_queue: queue.Queue, is_running_callback):
         self.speech_queue = speech_queue
         self.text_queue = text_queue
         self.is_running_callback = is_running_callback
-        self.recognizer = sr.Recognizer()
+        
+        self.deepgram_api_key = os.environ.get("DEEPGRAM_API_KEY")
+        if not self.deepgram_api_key:
+            logger.error("DEEPGRAM_API_KEY is not set in .env")
 
     def start(self):
         threading.Thread(target=self._transcribe_loop, daemon=True).start()
@@ -34,13 +41,20 @@ class AudioTranscriber:
 
     def _process_segment(self, audio_bytes, sample_rate, sample_width):
         try:
-            audio_obj = sr.AudioData(audio_bytes, sample_rate, sample_width)
-            text = self.recognizer.recognize_google(audio_obj)
-            logger.info(f"Audio Transcribed: '{text}'")
+            url = f"https://api.deepgram.com/v1/listen?punctuate=true&model=nova-2&encoding=linear16&sample_rate={sample_rate}&channels=1"
+            headers = {
+                "Authorization": f"Token {self.deepgram_api_key}",
+                "Content-Type": "audio/l16"
+            }
+            response = requests.post(url, headers=headers, data=audio_bytes)
+            response.raise_for_status()
             
-            # Push the text to the NLP/Translator queue
-            self.text_queue.put(text)
-        except sr.UnknownValueError:
-            logger.debug("Unrecognized background noise. Ignored.")
-        except sr.RequestError as e:
+            result = response.json()
+            text = result['results']['channels'][0]['alternatives'][0]['transcript']
+            
+            if text.strip():
+                logger.info(f"Audio Transcribed (Deepgram): '{text}'")
+                # Push the text to the NLP/Translator queue
+                self.text_queue.put(text)
+        except Exception as e:
             logger.error(f"Speech Recognition API Error: {e}")

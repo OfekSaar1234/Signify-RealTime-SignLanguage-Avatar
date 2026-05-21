@@ -15,8 +15,8 @@
   "audio": {
     "chunk_size": 4096,
     "silence_threshold_rms": 500,
-    "silence_timeout_sec": 0.5,
-    "max_recording_sec": 5.0
+    "silence_timeout_sec": 0.3,
+    "max_recording_sec": 2.0
   },
   "_comment_audio": "Audio capture settings. Adjust silence_timeout_sec to change how aggressively speech is chunked into phrases.",
   "playback": {
