@@ -24,6 +24,9 @@ class Animator:
         self.interpolation_frames = playback_settings.get("interpolation_frames", 2)
         
         self.session = requests.Session()
+        adapter = requests.adapters.HTTPAdapter(pool_connections=20, pool_maxsize=20)
+        self.session.mount('https://', adapter)
+        self.session.mount('http://', adapter)
         
         self.last_frame_data = None
         self.idle_sequence = self.load_json_sequence("idle")
@@ -34,28 +37,30 @@ class Animator:
     def start(self):
         threading.Thread(target=self._animation_loop, daemon=True).start()
 
-    @lru_cache(maxsize=128)
     def load_json_sequence(self, word: str) -> list:
-        word_lower = word.lower()
+        return self._cached_load_json_sequence(word.lower())
+
+    @lru_cache(maxsize=128)
+    def _cached_load_json_sequence(self, word_lower: str) -> list:
         url = f"https://signify-asl-dictionary-v1.s3.amazonaws.com/dictionary/{word_lower}.json"
         
         sequence = None
         try:
-            logger.debug(f"[S3 GET] Fetching: {url}")
+            logger.info(f"[S3 FETCH START] Requesting word '{word_lower}' from URL: {url}")
             t0 = time.time()
             response = self.session.get(url, timeout=2)
             elapsed_ms = (time.time() - t0) * 1000
             
             if response.status_code == 200:
-                logger.debug(f"[S3 RESP] 200 OK for '{word}' ({elapsed_ms:.0f}ms)")
+                logger.info(f"[S3 FETCH TIMER] Successfully retrieved word '{word_lower}' from bucket in {elapsed_ms:.2f} ms")
                 sequence = response.json()
             elif response.status_code == 404:
-                logger.warning(f"[S3 RESP] 404 Not Found for '{word}' ({elapsed_ms:.0f}ms)")
+                logger.warning(f"[S3 RESP] 404 Not Found for '{word_lower}' ({elapsed_ms:.2f} ms)")
                 pass
             else:
-                logger.warning(f"[S3 RESP] {response.status_code} Error for '{word}' ({elapsed_ms:.0f}ms)")
+                logger.warning(f"[S3 RESP] {response.status_code} Error for '{word_lower}' ({elapsed_ms:.0f}ms)")
         except requests.exceptions.RequestException as e:
-            logger.error(f"[S3 ERROR] Network error fetching '{word}': {e}")
+            logger.error(f"[S3 ERROR] Network error fetching '{word_lower}': {e}")
                 
         # Perform Missing Frame Imputation (Gap Filling)
         if sequence:
@@ -85,9 +90,16 @@ class Animator:
                 last_valid_idx = i
 
     def warm_up_cache(self):
-        """Pre-loads common ASL words into RAM."""
-        # Temporarily disabled until the full dictionary is uploaded to S3
-        logger.info("Cache warmup disabled pending full dictionary upload.")
+        """Pre-loads common ASL words into RAM to establish the TLS connection and eliminate cold starts."""
+        logger.info("[WARMUP] Warming up network connection and caching common words...")
+        common_words = ["hello", "thank", "you", "how", "what", "is"]
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(common_words)) as executor:
+            list(executor.map(self.load_json_sequence, common_words))
+        logger.info("[WARMUP] Network connection established and cache warmed up.")
+        logger.info("==================================================")
+        logger.info("✅ AVATAR IS FULLY WARMED UP AND READY! ✅")
+        logger.info("==================================================")
 
     def _calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
         interpolated_result = {}
@@ -152,12 +164,21 @@ class Animator:
 
     def _animation_loop(self):
         logger.info("Avatar Animation Engine running. Waiting for incoming speech...")
+        
+        import concurrent.futures
+        
         while self.is_running_callback():
             try:
                 # Try to get a gloss sequence
                 sentence_glosses = self.gloss_queue.get_nowait()
                 self.is_idle = False
                 logger.info(f"Animating sequence: {sentence_glosses}")
+                
+                # Pre-fetch all words concurrently so we don't block on network per-word
+                logger.info(f"[PRE-FETCH] Downloading all words for sentence concurrently...")
+                with concurrent.futures.ThreadPoolExecutor(max_workers=min(10, len(sentence_glosses))) as executor:
+                    list(executor.map(self.load_json_sequence, sentence_glosses))
+                    
                 for word in sentence_glosses:
                     self._play_single_word(word)
                     if not self.is_running_callback(): break
