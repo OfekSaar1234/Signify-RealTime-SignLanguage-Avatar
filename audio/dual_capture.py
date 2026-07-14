@@ -92,7 +92,7 @@ class DualAudioCapture:
                 logger.error(f"[{source_type.upper()}] Failed to open stream: {e}")
                 return
                 
-            logger.info(f"🎙️ Live {source_type.capitalize()} Capture Started 🎙️")
+            logger.info(f"[AUDIO] Live {source_type.capitalize()} Capture Started")
             
         # Dynamic Chunking from config
         max_silence_sec = self.config.get("silence_timeout_sec", 0.5)

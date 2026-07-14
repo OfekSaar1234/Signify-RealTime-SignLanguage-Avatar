@@ -202,17 +202,33 @@ class SignifyDashboard(ctk.CTk):
         self.status_label = ctk.CTkLabel(self.bottom_frame, text="Status: Ready", text_color="gray")
         self.status_label.pack(pady=(0, 5))
 
+        self.button_frame = ctk.CTkFrame(self.bottom_frame, fg_color="transparent")
+        self.button_frame.pack()
+
         self.start_button = ctk.CTkButton(
-            self.bottom_frame, 
+            self.button_frame, 
             text="START SIGNIFY", 
             font=ctk.CTkFont(size=18, weight="bold"),
             height=50,
-            width=250,
+            width=200,
             fg_color="#10B981", # Emerald Green
             hover_color="#059669",
             command=self.toggle_signify
         )
-        self.start_button.pack()
+        self.start_button.pack(side="left", padx=10)
+
+        self.clear_button = ctk.CTkButton(
+            self.button_frame, 
+            text="CLEAR QUEUE (Ctrl+Space)", 
+            font=ctk.CTkFont(size=14, weight="bold"),
+            height=50,
+            width=200,
+            fg_color="#F59E0B", # Amber
+            hover_color="#D97706",
+            command=self.clear_queue,
+            state="disabled"
+        )
+        self.clear_button.pack(side="right", padx=10)
 
         # ---- LIVE TYPING PANEL ----
         self.typing_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -322,6 +338,9 @@ class SignifyDashboard(ctk.CTk):
             if self.config_data.get("input_mode") == "typing":
                 self.typing_entry.configure(state="normal")
                 self.send_button.configure(state="normal")
+            
+            # Enable clear button
+            self.clear_button.configure(state="normal")
         else:
             # Stop Process
             self.pipeline_process.terminate()
@@ -330,9 +349,18 @@ class SignifyDashboard(ctk.CTk):
             self.start_button.configure(text="START SIGNIFY", fg_color="#10B981", hover_color="#059669")
             self.status_label.configure(text="Status: Stopped", text_color="gray")
 
-            # Disable typing
+            # Disable typing and clear
             self.typing_entry.configure(state="disabled")
             self.send_button.configure(state="disabled")
+            self.clear_button.configure(state="disabled")
+
+    def clear_queue(self):
+        if self.pipeline_process and self.pipeline_process.poll() is None:
+            try:
+                self.pipeline_process.stdin.write("!CLEAR_QUEUE!\n")
+                self.pipeline_process.stdin.flush()
+            except Exception as e:
+                print(f"Failed to send CLEAR command: {e}")
 
     def output_listener(self):
         """Reads stdout from the subprocess in the background to update the GUI."""

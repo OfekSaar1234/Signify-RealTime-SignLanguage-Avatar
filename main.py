@@ -13,7 +13,8 @@ from output.headless import HeadlessRenderer
 # Input mechanisms
 from audio.dual_capture import DualAudioCapture
 from audio.transcriber import AudioTranscriber
-from core.typing_input import TypingInput
+from core.stdin_listener import StdinListener
+import keyboard
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "config", "app_settings.json")
@@ -40,6 +41,24 @@ if __name__ == "__main__":
     is_running = True
     def is_running_callback():
         return is_running
+
+    def clear_all_queues():
+        logger.info("CLEARING ALL QUEUES (Hotkey / Dashboard trigger)")
+        for q in [speech_audio_queue, text_queue, gloss_queue, frame_queue]:
+            while not q.empty():
+                try:
+                    q.get_nowait()
+                except queue.Empty:
+                    break
+        if 'animator' in globals() or 'animator' in locals():
+            animator.trigger_clear()
+
+    # Register global hotkey
+    try:
+        keyboard.add_hotkey('ctrl+space', clear_all_queues)
+        logger.info("Global hotkey registered: Ctrl+Space -> Clear Queues")
+    except Exception as e:
+        logger.warning(f"Failed to register global hotkey: {e}")
 
     # Initialize Modules
     
@@ -87,10 +106,10 @@ if __name__ == "__main__":
         
         capture = DualAudioCapture(speech_audio_queue, is_running_callback, config=app_settings.get("audio", {}))
         capture.start()
-    else:
-        logger.info("Initializing Input: Manual Typing")
-        typing_input = TypingInput(text_queue, is_running_callback)
-        typing_input.start()
+
+    # Always start StdinListener for IPC commands, and optionally for typing input
+    stdin_listener = StdinListener(text_queue, is_running_callback, clear_all_queues, input_mode)
+    stdin_listener.start()
 
     # Block on the Renderer loop until user quits (press 'q' on the OpenCV window)
     try:

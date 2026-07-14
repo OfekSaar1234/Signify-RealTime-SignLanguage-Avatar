@@ -50,7 +50,7 @@ class OpenCVRenderer:
                 frame_payload = self.frame_queue.get(timeout=0.05)
                 frame_data = frame_payload.get("data", {})
                 ui_label = frame_payload.get("label", "Waiting...")
-                wait_ms = frame_payload.get("wait_ms", 33)
+                wait_ms = max(1, frame_payload.get("wait_ms", 33))
                 
                 # Broadcast the raw frame data if a streamer is attached
                 if self.streamer and frame_data:

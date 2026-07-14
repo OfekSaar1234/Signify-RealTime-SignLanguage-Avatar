@@ -22,8 +22,15 @@ class Animator:
         self.transition_frames = playback_settings.get("transition_frames", 5)
         self.interpolation_frames = playback_settings.get("interpolation_frames", 2)
         
-        import boto3
-        self.dynamodb = boto3.client('dynamodb', region_name='us-east-1')
+        self.data_source = app_settings.get("data_source", "local")
+        
+        if self.data_source == "aws":
+            import boto3
+            self.dynamodb = boto3.client('dynamodb', region_name='us-east-1')
+        else:
+            self.dynamodb = None
+            
+        self.local_assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets", "jsons")
         
         self.memory_cache = {}
         
@@ -31,11 +38,14 @@ class Animator:
         self.idle_sequence = self.load_json_sequence("idle")
         self.idle_frame_idx = 0
         self.is_idle = False
+        self.clear_requested = threading.Event()
         self.warm_up_cache()
+
+    def trigger_clear(self):
+        self.clear_requested.set()
 
     def start(self):
         threading.Thread(target=self._animation_loop, daemon=True).start()
-        threading.Thread(target=self._prefetch_loop, daemon=True).start()
 
     def load_json_sequence(self, word: str) -> list:
         word_lower = word.lower()
@@ -43,23 +53,39 @@ class Animator:
             return self.memory_cache[word_lower]
             
         sequence = None
+        first_letter = word_lower[0]
+        first_two = word_lower[:2]
+        filepath = os.path.join(self.local_assets_dir, first_letter, first_two, f"{word_lower}.json")
+        
         try:
-            logger.info(f"[DYNAMO FETCH START] Requesting word '{word_lower}' from DynamoDB")
-            t0 = time.time()
-            response = self.dynamodb.get_item(
-                TableName='SignifyDictionary',
-                Key={'word': {'S': word_lower}}
-            )
-            elapsed_ms = (time.time() - t0) * 1000
-            
-            if 'Item' in response:
-                logger.info(f"[DYNAMO FETCH TIMER] Successfully retrieved word '{word_lower}' in {elapsed_ms:.2f} ms")
-                json_string = response['Item']['animation_data']['S']
-                sequence = json.loads(json_string)
-            else:
-                logger.warning(f"[DYNAMO RESP] 404 Not Found for '{word_lower}' ({elapsed_ms:.2f} ms)")
+            if self.data_source == "local":
+                t0 = time.time()
+                if os.path.exists(filepath):
+                    with open(filepath, 'r') as f:
+                        sequence = json.load(f)
+                    elapsed_ms = (time.time() - t0) * 1000
+                    logger.info(f"[LOCAL FETCH] Successfully loaded '{word_lower}' in {elapsed_ms:.2f} ms")
+                else:
+                    logger.warning(f"[LOCAL RESP] 404 Not Found for '{word_lower}'")
+
+            elif self.data_source == "aws":
+                logger.info(f"[DYNAMO FETCH START] Requesting word '{word_lower}' from DynamoDB")
+                t0 = time.time()
+                response = self.dynamodb.get_item(
+                    TableName='SignifyDictionary',
+                    Key={'word': {'S': word_lower}}
+                )
+                elapsed_ms = (time.time() - t0) * 1000
+                
+                if 'Item' in response:
+                    logger.info(f"[DYNAMO FETCH TIMER] Successfully retrieved word '{word_lower}' in {elapsed_ms:.2f} ms")
+                    json_string = response['Item']['animation_data']['S']
+                    sequence = json.loads(json_string)
+                else:
+                    logger.warning(f"[DYNAMO RESP] 404 Not Found for '{word_lower}' ({elapsed_ms:.2f} ms)")
         except Exception as e:
-            logger.error(f"[DYNAMO ERROR] Network error fetching '{word_lower}': {e}")
+            source_name = "DynamoDB" if self.data_source == "aws" else "Local"
+            logger.error(f"[{source_name} ERROR] Network/File error fetching '{word_lower}': {e}")
                 
         # Perform Missing Frame Imputation (Gap Filling)
         if sequence:
@@ -98,7 +124,7 @@ class Animator:
             list(executor.map(self.load_json_sequence, common_words))
         logger.info("[WARMUP] Network connection established and cache warmed up.")
         logger.info("==================================================")
-        logger.info("✅ AVATAR IS FULLY WARMED UP AND READY! ✅")
+        logger.info("AVATAR IS FULLY WARMED UP AND READY!")
         logger.info("==================================================")
 
     def _calculate_smooth_frame(self, start_frame: dict, end_frame: dict, interpolation_factor: float) -> dict:
@@ -137,106 +163,55 @@ class Animator:
         animation_sequence = self.load_json_sequence(word)
         if not animation_sequence:
             logger.warning(f"Missing animation file for: {word}. Skipping.")
-            return
+            return True
 
         if self.last_frame_data is not None:
             first_frame_of_new_word = animation_sequence[0]
             for i in range(1, self.transition_frames + 1):
+                if self.clear_requested.is_set(): return False
                 blend_factor = i / float(self.transition_frames)
                 blend_frame = self._calculate_smooth_frame(self.last_frame_data, first_frame_of_new_word, blend_factor)
                 self._push_frame(blend_frame, "Transitioning...", 1)
-                if not self.is_running_callback(): return
+                if not self.is_running_callback(): return False
 
         for i in range(len(animation_sequence)):
+            if self.clear_requested.is_set(): return False
             current_frame = animation_sequence[i]
             wait_time = max(1, self.playback_speed_ms // (self.interpolation_frames + 1))
             
             self._push_frame(current_frame, f"Signing: {word.upper()}", wait_time)
-            if not self.is_running_callback(): return
+            if not self.is_running_callback(): return False
                 
             if i < len(animation_sequence) - 1 and self.interpolation_frames > 0:
                 next_frame = animation_sequence[i + 1]
                 for j in range(1, self.interpolation_frames + 1):
+                    if self.clear_requested.is_set(): return False
                     blend_factor = j / float(self.interpolation_frames + 1)
                     blend_frame = self._calculate_smooth_frame(current_frame, next_frame, blend_factor)
                     self._push_frame(blend_frame, f"Signing: {word.upper()}", wait_time)
-                    if not self.is_running_callback(): return
+                    if not self.is_running_callback(): return False
+        return True
 
     def _execute_batch_fetch(self, words_to_fetch: list):
         if not words_to_fetch:
             return
             
-        logger.info(f"[PRE-FETCH] Batch downloading {len(words_to_fetch)} words for sentence...")
+        logger.info(f"[PRE-FETCH] Downloading {len(words_to_fetch)} words concurrently for sentence...")
         
-        # De-duplicate keys
-        unique_keys = []
-        seen = set()
-        for w in words_to_fetch:
-            if w not in seen:
-                seen.add(w)
-                unique_keys.append({'word': {'S': w}})
+        # De-duplicate words
+        unique_words = list(set(words_to_fetch))
         
-        # DynamoDB BatchGetItem strict limit: 100 items or 16MB per request
-        chunk_size = 100
-        fetched_words = set()
-        
+        import concurrent.futures
         t0 = time.time()
-        for i in range(0, len(unique_keys), chunk_size):
-            chunk = unique_keys[i:i + chunk_size]
-            try:
-                response = self.dynamodb.batch_get_item(
-                    RequestItems={
-                        'SignifyDictionary': {
-                            'Keys': chunk
-                        }
-                    }
-                )
-                items = response.get('Responses', {}).get('SignifyDictionary', [])
-                
-                for item in items:
-                    word_val = item['word']['S']
-                    json_string = item['animation_data']['S']
-                    sequence = json.loads(json_string)
-                    for key in ["f", "fj", "fl", "fre", "fle", "l", "r"]:
-                        self._fill_missing_landmarks(sequence, key)
-                    self.memory_cache[word_val] = sequence
-                    fetched_words.add(word_val)
-            except Exception as e:
-                logger.error(f"[DYNAMO BATCH ERROR]: {e}")
+        
+        # We use a ThreadPool to fetch items individually.
+        # This completely avoids DynamoDB's 'UnprocessedKeys' batch limit silent failures,
+        # and allows boto3 to automatically retry throttled requests safely.
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(len(unique_words), 10)) as executor:
+            list(executor.map(self.load_json_sequence, unique_words))
                 
         elapsed_ms = (time.time() - t0) * 1000
-        logger.info(f"[DYNAMO BATCH TIMER] Retrieved {len(fetched_words)} words simultaneously in {elapsed_ms:.2f} ms")
-            
-        # Mark 404s as None so we don't keep fetching them
-        for k in unique_keys:
-            word_val = k['word']['S']
-            if word_val not in fetched_words:
-                self.memory_cache[word_val] = None
-                logger.warning(f"[DYNAMO RESP] 404 Not Found for '{word_val}' (Batch)")
-
-    def _prefetch_loop(self):
-        while self.is_running_callback():
-            try:
-                # Safely peek into the gloss_queue without removing items
-                with self.gloss_queue.mutex:
-                    queued_sentences = list(self.gloss_queue.queue)
-                    
-                if queued_sentences:
-                    words_to_fetch = set()
-                    for sentence in queued_sentences:
-                        for word in sentence:
-                            w_lower = word.lower()
-                            if w_lower not in self.memory_cache:
-                                words_to_fetch.add(w_lower)
-                                
-                    if words_to_fetch:
-                        logger.info(f"[BACKGROUND PRE-FETCH] Discovered {len(words_to_fetch)} un-cached words waiting in queue!")
-                        self._execute_batch_fetch(list(words_to_fetch))
-                        
-                time.sleep(0.5)
-            except Exception as e:
-                logger.error(f"[PREFETCH LOOP ERROR]: {e}")
-                time.sleep(1)
+        logger.info(f"[DYNAMO BATCH TIMER] Retrieved {len(unique_words)} words concurrently in {elapsed_ms:.2f} ms")
 
     def _animation_loop(self):
         logger.info("Avatar Animation Engine running. Waiting for incoming speech...")
@@ -257,9 +232,23 @@ class Animator:
                     self._execute_batch_fetch(words_to_fetch)
                     
                 for word in sentence_glosses:
-                    self._play_single_word(word)
+                    if self.clear_requested.is_set():
+                        break
+                    if not self._play_single_word(word):
+                        break
                     if not self.is_running_callback(): break
+                
+                if self.clear_requested.is_set():
+                    self.clear_requested.clear()
+                    self.last_frame_data = None  # Force immediate snap to idle
+                    self.is_idle = False
+                    
             except queue.Empty:
+                if self.clear_requested.is_set():
+                    self.clear_requested.clear()
+                    self.last_frame_data = None
+                    self.is_idle = False
+                    
                 # Handle Idle state
                 if self.idle_sequence:
                     if not self.is_idle and self.last_frame_data:
