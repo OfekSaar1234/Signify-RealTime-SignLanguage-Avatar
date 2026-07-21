@@ -13,6 +13,7 @@ from output.headless import HeadlessRenderer
 # Input mechanisms
 from audio.dual_capture import DualAudioCapture
 from audio.transcriber import AudioTranscriber
+from audio.websocket_receiver import WebSocketAudioReceiver
 from core.stdin_listener import StdinListener
 import keyboard
 
@@ -105,6 +106,13 @@ if __name__ == "__main__":
         transcriber.start()
         
         capture = DualAudioCapture(speech_audio_queue, is_running_callback, config=app_settings.get("audio", {}))
+        capture.start()
+    elif input_mode == "websocket_audio":
+        logger.info(f"Initializing Input: WebSocket Audio Receiver")
+        transcriber = AudioTranscriber(speech_audio_queue, text_queue, is_running_callback)
+        transcriber.start()
+        
+        capture = WebSocketAudioReceiver(speech_audio_queue, is_running_callback, port=8766, config=app_settings.get("audio", {}))
         capture.start()
 
     # Always start StdinListener for IPC commands, and optionally for typing input

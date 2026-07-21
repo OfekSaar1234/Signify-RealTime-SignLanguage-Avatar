@@ -1,3 +1,4 @@
+import base64
 import cv2
 import numpy as np
 import queue
@@ -52,16 +53,28 @@ class OpenCVRenderer:
                 ui_label = frame_payload.get("label", "Waiting...")
                 wait_ms = max(1, frame_payload.get("wait_ms", 33))
                 
-                # Broadcast the raw frame data if a streamer is attached
-                if self.streamer and frame_data:
-                    self.streamer.broadcast(frame_data)
-                    
                 self.display_canvas.fill(0)
                 
                 if frame_data:
                     draw_skeleton(self.display_canvas, frame_data, self.width, self.height, self.scale, self.offset, self.BODY_PART_COLORS)
                     
-                cv2.putText(self.display_canvas, ui_label, (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                # Calculate safe text coordinates within the cropped region
+                crop_x1 = int(self.width * 0.25)
+                crop_y1 = int(self.height * 0.1)
+                cv2.putText(self.display_canvas, ui_label, (crop_x1 + 20, crop_y1 + 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                
+                # Broadcast the rendered frame as a Base64 JPEG if a streamer is attached
+                if self.streamer:
+                    # Crop the canvas tightly around the avatar to remove wasted black space
+                    y1, y2 = int(self.height * 0.1), int(self.height * 0.95)
+                    x1, x2 = int(self.width * 0.25), int(self.width * 0.75)
+                    cropped = self.display_canvas[y1:y2, x1:x2]
+                    
+                    ret, buffer = cv2.imencode('.jpg', cropped, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+                    if ret:
+                        b64_string = base64.b64encode(buffer).decode('utf-8')
+                        self.streamer.broadcast(b64_string)
+                        
                 cv2.imshow(window_name, self.display_canvas)
                 
                 if cv2.waitKey(wait_ms) & 0xFF == ord('q'):

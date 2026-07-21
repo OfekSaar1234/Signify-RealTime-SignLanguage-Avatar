@@ -38,8 +38,12 @@ class WebSocketStreamer:
             logger.info(f"WebSocket Server started on ws://{self.host}:{self.port}")
             await asyncio.Future()
 
-    def broadcast(self, frame_data: dict):
+    def broadcast(self, payload):
         if self.connected_ws_clients and self.ws_loop:
-            json_string = json.dumps(frame_data, separators=(',', ':'))
+            if isinstance(payload, dict):
+                data_to_send = json.dumps(payload, separators=(',', ':'))
+            else:
+                data_to_send = payload
+                
             for client in list(self.connected_ws_clients):
-                asyncio.run_coroutine_threadsafe(client.send(json_string), self.ws_loop)
+                asyncio.run_coroutine_threadsafe(client.send(data_to_send), self.ws_loop)

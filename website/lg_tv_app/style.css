@@ -1,0 +1,520 @@
+/* Global Reset & TV Theme styling */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none; /* Prevents text selection on TV screens */
+}
+
+body {
+    background-color: #0c0c0e;
+    color: #f3f4f6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* TV App Outer Container */
+.tv-container {
+    width: 100%;
+    height: 100%;
+    max-width: 1920px;
+    max-height: 1080px;
+    background-color: #121214;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid #1f1f23;
+}
+
+/* Header Styling */
+.tv-header {
+    height: 70px;
+    padding: 0 40px;
+    background-color: #16161a;
+    border-bottom: 2px solid #1f1f23;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.tv-header .logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.tv-header .logo .accent {
+    color: #3b82f6;
+}
+
+.tv-header .logo .subtext {
+    font-size: 14px;
+    color: #71717a;
+    font-weight: 400;
+}
+
+/* Badges styling */
+.badges-container {
+    display: flex;
+    gap: 24px;
+}
+
+.badge-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-label {
+    font-size: 13px;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: capitalize;
+    transition: all 0.3s ease;
+}
+
+.badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+/* Badge States */
+.badge.disconnected {
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #fca5a5;
+}
+.badge.disconnected .badge-dot {
+    background-color: #ef4444;
+}
+
+.badge.connecting {
+    background-color: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    color: #fde68a;
+}
+.badge.connecting .badge-dot {
+    background-color: #f59e0b;
+    animation: badgeBlink 1s infinite ease-in-out;
+}
+
+.badge.connected {
+    background-color: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #a7f3d0;
+}
+.badge.connected .badge-dot {
+    background-color: #10b981;
+    animation: badgePulseWS 1.5s infinite;
+}
+
+.badge.idle {
+    background-color: rgba(113, 113, 122, 0.1);
+    border: 1px solid rgba(113, 113, 122, 0.4);
+    color: #d4d4d8;
+}
+.badge.idle .badge-dot {
+    background-color: #71717a;
+}
+
+.badge.streaming {
+    background-color: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.4);
+    color: #bfdbfe;
+}
+.badge.streaming .badge-dot {
+    background-color: #3b82f6;
+    animation: badgePulseAudio 1.5s infinite;
+}
+
+/* Animations for badges */
+@keyframes badgeBlink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+
+@keyframes badgePulseWS {
+    0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+@keyframes badgePulseAudio {
+    0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+
+/* Main Video Workspace */
+.tv-main {
+    flex: 1;
+    position: relative;
+    background-color: #09090b;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    padding: 20px;
+}
+
+.video-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1600px;
+    aspect-ratio: 16 / 9;
+    background-color: #000;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    border: 2px solid #27272a;
+}
+
+.video-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Video Overlay Info */
+.video-title-overlay {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: rgba(9, 9, 11, 0.75);
+    padding: 8px 16px;
+    border-radius: 8px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+}
+
+.live-indicator {
+    background-color: #ef4444;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 4px;
+    letter-spacing: 1px;
+    animation: badgeBlink 1.5s infinite ease-in-out;
+}
+
+.channel-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+/* Floating Avatar Overlay Box */
+.avatar-box {
+    position: absolute;
+    bottom: 24px;
+    right: 24px;
+    width: 440px;
+    height: auto;
+    background-color: rgba(22, 22, 26, 0.85);
+    backdrop-filter: blur(12px);
+    border: 2px solid #27272a;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    resize: both;
+    transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+.avatar-box.streaming {
+    border-color: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3), 0 20px 25px -5px rgba(0, 0, 0, 0.6);
+}
+
+.avatar-header {
+    height: 38px;
+    background-color: rgba(27, 27, 36, 0.9);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: grab;
+}
+
+.avatar-header:active {
+    cursor: grabbing;
+}
+
+.interpreter-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #71717a;
+    transition: background-color 0.3s ease;
+}
+
+.avatar-box.streaming .interpreter-dot {
+    background-color: #3b82f6;
+    animation: badgeBlink 1s infinite ease-in-out;
+}
+
+.avatar-svg-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle at center, #1e1e24 0%, #111115 100%);
+}
+
+.avatar-svg {
+    max-width: 100%;
+    max-height: 100%;
+    transition: transform 0.3s ease;
+}
+
+/* Avatar Animations Definition */
+
+/* Outer glow ring */
+.avatar-bg-circle {
+    transition: stroke 0.5s ease, filter 0.5s ease;
+}
+.streaming .avatar-bg-circle {
+    animation: glowPulse 1.5s infinite ease-in-out alternate;
+}
+
+@keyframes glowPulse {
+    0% { stroke: #3b82f6; filter: drop-shadow(0 0 2px rgba(59, 130, 246, 0.3)); }
+    100% { stroke: #60a5fa; filter: drop-shadow(0 0 12px rgba(96, 165, 250, 0.7)); }
+}
+
+/* Torso breathing */
+.avatar-torso {
+    transform-origin: bottom center;
+}
+.streaming .avatar-torso {
+    animation: torsoBreathe 2s infinite ease-in-out alternate;
+}
+
+@keyframes torsoBreathe {
+    0% { transform: scaleY(1); }
+    100% { transform: scaleY(1.04); }
+}
+
+/* Head bobbing */
+.avatar-head-group {
+    transform-origin: 100px 105px;
+}
+.streaming .avatar-head-group {
+    animation: headBob 1.8s infinite ease-in-out alternate;
+}
+
+@keyframes headBob {
+    0% { transform: translateY(0) rotate(-1.5deg); }
+    100% { transform: translateY(-2px) rotate(1.5deg); }
+}
+
+/* Mouth speaking */
+.avatar-mouth {
+    transform-origin: 100px 90px;
+}
+.streaming .avatar-mouth {
+    animation: mouthTalk 0.18s infinite ease-in-out alternate;
+}
+
+@keyframes mouthTalk {
+    0% { transform: scaleY(0.4) scaleX(0.85); }
+    100% { transform: scaleY(1.7) scaleX(1.1); }
+}
+
+/* Left Arm signing */
+.avatar-arm-left-group {
+    transform-origin: 65px 130px;
+}
+.streaming .avatar-arm-left-group {
+    animation: armSignLeft 0.7s infinite ease-in-out alternate;
+}
+
+@keyframes armSignLeft {
+    0% { transform: rotate(0deg) translate(0, 0); }
+    33% { transform: rotate(12deg) translate(-5px, -8px); }
+    66% { transform: rotate(-8deg) translate(2px, -3px); }
+    100% { transform: rotate(6deg) translate(-3px, -10px); }
+}
+
+/* Right Arm signing */
+.avatar-arm-right-group {
+    transform-origin: 135px 130px;
+}
+.streaming .avatar-arm-right-group {
+    animation: armSignRight 0.6s infinite ease-in-out alternate;
+}
+
+@keyframes armSignRight {
+    0% { transform: rotate(0deg) translate(0, 0); }
+    33% { transform: rotate(-15deg) translate(6px, -10px); }
+    66% { transform: rotate(8deg) translate(-3px, -2px); }
+    100% { transform: rotate(-10deg) translate(5px, -8px); }
+}
+
+
+/* Footer Controls Section */
+.tv-footer {
+    padding: 24px 40px;
+    background-color: #16161a;
+    border-top: 2px solid #1f1f23;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 40px;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.ws-config {
+    flex: 1;
+}
+
+.ws-config label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+.ws-config input {
+    width: 100%;
+    max-width: 450px;
+    background-color: #0c0c0e;
+    border: 1px solid #27272a;
+    border-radius: 8px;
+    color: #fff;
+    padding: 12px 18px;
+    font-size: 16px;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.ws-config input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+}
+
+.control-group.buttons {
+    display: flex;
+    gap: 16px;
+}
+
+/* Button styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 28px;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-icon {
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #3b82f6;
+    color: #fff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:active:not(:disabled) {
+    background-color: #1d4ed8;
+    transform: translateY(0);
+}
+
+.btn-danger {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:active:not(:disabled) {
+    background-color: #b91c1c;
+    transform: translateY(0);
+}
+
+.btn:disabled {
+    background-color: #27272a;
+    border: 1px solid #3f3f46;
+    color: #71717a;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: none;
+}
+
+.tv-instructions {
+    font-size: 13px;
+    color: #71717a;
+    text-align: center;
+}
+
+/* Focus highlighting for TV remote navigation simulations */
+.btn:focus, .ws-config input:focus {
+    outline: 2px solid #60a5fa;
+    outline-offset: 2px;
+}

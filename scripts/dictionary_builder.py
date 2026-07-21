@@ -216,8 +216,8 @@ if __name__ == "__main__":
         shard_dir = os.path.join(JSON_DIR, first_letter, prefix)
         json_path = os.path.join(shard_dir, f"{word}.json")
         
-        # Force Rebuild: We want to overwrite with our newly compressed JSONs
-        FORCE_REBUILD = True
+        # Force Rebuild: False ensures we only build new MP4s
+        FORCE_REBUILD = False
         if not FORCE_REBUILD and os.path.exists(json_path):
             print(f"[SKIP] '{word}.json' already exists. Saving time!")
             continue

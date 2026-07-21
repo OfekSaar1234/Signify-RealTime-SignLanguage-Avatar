@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signify - LG webOS TV App</title>
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+<body>
+    <div class="tv-container">
+        <!-- Header Section -->
+        <header class="tv-header">
+            <div class="logo">
+                <span class="accent">SIGNIFY</span> <span class="subtext">// TV Broadcast Portal</span>
+            </div>
+            <div class="badges-container">
+                <!-- WebSocket Status Badge -->
+                <div class="badge-item">
+                    <span class="badge-label">WS Connection:</span>
+                    <div id="wsBadge" class="badge disconnected">
+                        <span class="badge-dot"></span>
+                        <span class="badge-text">Disconnected</span>
+                    </div>
+                </div>
+                <!-- Audio Capture Status Badge -->
+                <div class="badge-item">
+                    <span class="badge-label">Audio Capture:</span>
+                    <div id="audioBadge" class="badge idle">
+                        <span class="badge-dot"></span>
+                        <span class="badge-text">Idle</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace: Video + Floating Avatar -->
+        <main class="tv-main">
+            <div class="video-container">
+                <video id="broadcastVideo" class="tv-video-player" src="motivation.mp4" playsinline></video>
+                
+                <!-- Video Overlay Title -->
+                <div class="video-title-overlay">
+                    <span class="live-indicator">LIVE</span>
+                    <span class="channel-name">SIGNIFY NEWS 24/7</span>
+                </div>
+
+                <!-- Floating Sign Language Avatar Overlay Box -->
+                <div class="avatar-box" id="avatarBox">
+                    <div class="avatar-header" id="avatarDragHandle">
+                        <span class="interpreter-dot"></span>
+                        Interpreter Overlay
+                    </div>
+                    <div class="avatar-svg-container">
+                        <img id="avatarStream" src="" alt="Signify Avatar" style="width: 100%; height: 100%; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer Control Panel Section -->
+        <footer class="tv-footer">
+            <div class="control-row">
+                <div class="control-group ws-config">
+                    <label for="wsUrlInput">WebSocket URL</label>
+                    <input type="text" id="wsUrlInput" value="ws://localhost:8766" spellcheck="false" autocomplete="off">
+                </div>
+                
+                <div class="control-group playback-config" style="display: flex; flex-direction: column; gap: 8px; margin-right: auto; padding-left: 20px;">
+                    <label for="playbackSpeed" style="font-size: 14px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px;">Speed</label>
+                    <select id="playbackSpeed" style="background-color: #0c0c0e; border: 1px solid #27272a; border-radius: 8px; color: #fff; padding: 12px 18px; font-size: 16px; outline: none; cursor: pointer;">
+                        <option value="1.0">1x</option>
+                        <option value="0.75" selected>0.75x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="0.25">0.25x</option>
+                    </select>
+                </div>
+
+                <div class="control-group buttons">
+                    <button id="startBtn" class="btn btn-primary">
+                        <span class="btn-icon">▶</span> Play & Stream
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger" disabled>
+                        <span class="btn-icon">■</span> Stop Broadcast
+                    </button>
+                </div>
+            </div>
+            <div class="tv-instructions">
+                Use TV remote or mouse to configure the WebSocket server and toggle the broadcast.
+            </div>
+        </footer>
+    </div>
+    <script src="app.js?v=3"></script>
+</body>
+</html>
