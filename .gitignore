@@ -13,3 +13,6 @@ assets/jsons/
 
 # Environment Variables
 .env
+
+# Agent testing / profile cache
+.agents/
