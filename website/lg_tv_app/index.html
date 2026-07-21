@@ -4,14 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signify - LG webOS TV App</title>
+    <link rel="icon" href="icon.png">
     <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
     <div class="tv-container">
-        <!-- Header Section -->
+        <!-- TV Header Bar -->
         <header class="tv-header">
-            <div class="logo">
-                <span class="accent">SIGNIFY</span> <span class="subtext">// TV Broadcast Portal</span>
+            <div class="logo" style="display: flex; align-items: center;">
+                <img src="icon.png" alt="Signify Logo" height="32" style="margin-right: 12px; border-radius: 4px;">
+                <div>
+                    <span class="accent">SIG</span>NIFY
+                    <span class="subtext" style="display: block; margin-top: -4px;">LIVE TV Broadcast</span>
+                </div>
             </div>
             <div class="badges-container">
                 <!-- WebSocket Status Badge -->

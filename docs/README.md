@@ -62,8 +62,17 @@ The animation data (JSON files containing body/face/hand landmark coordinates) i
 │                                                   ┌────────▼──────┐ │
 │                                                   │  WebSocket    │ │
 │                                                   │  Streamer     │ │
-│                                                   └───────────────┘ │
-└─────────────────────────────────────────────────────────────────────┘
+│                                                   └───────┬───────┘ │
+└───────────────────────────────────────────────────────────┼─────────┘
+                                                            │
+                                                     (WebSockets)
+                                                            ▼
+                                    ┌─────────────────────────────────────────────────┐
+                                    │               LG webOS TV App                   │
+                                    │ - Real-Time VAD Audio Streaming (Port 8766)     │
+                                    │ - Draggable/Resizable Interpreter Overlay       │
+                                    │ - Dynamic Playback Speed Controller             │
+                                    └─────────────────────────────────────────────────┘
                                     ▲
                                     │  HTTP GET (on cache miss)
                                     ▼
@@ -128,7 +137,7 @@ The runtime pipeline is a **multi-threaded, queue-connected chain** of independe
   - `opencv` — Local display window (always-on-top).
   - `virtual_cam` — Streams to OBS Virtual Camera for use in Zoom/Teams/Google Meet.
   - `electron` — Headless mode for external UI consumers.
-- Optionally broadcasts raw frame data over **WebSockets** for external 3D rendering engines.
+- Broadcasts raw frame data over **WebSockets** (Port 8765) for the LG webOS TV App and other external consumers.
 
 ---
 
@@ -250,6 +259,12 @@ Signify/
 │   ├── drawing.py               # Catmull-Rom spline renderer with glow effects
 │   └── logger.py                # Centralized logging
 │
+├── website/
+│   └── lg_tv_app/               # LG webOS TV App Proof-of-Concept
+│       ├── index.html           # TV Interface with video and overlay
+│       ├── style.css            # Styling for draggable/resizable overlay
+│       └── app.js               # WebSockets, VAD Audio logic, and Playback controls
+│
 ├── config/
 │   ├── app_settings.json        # Master configuration (input/output/playback/audio)
 │   └── asl_rules.json           # ASL translation rules (stop words, time words)
@@ -338,12 +353,13 @@ All settings are managed through `config/app_settings.json`:
 |------|----------|--------------|
 | **Local Display** (`opencv`) | Development & demo | Always-on-top OpenCV window. Press `q` to quit. |
 | **Virtual Camera** (`virtual_cam`) | Zoom / Teams / Meet | Streams the avatar as a camera device via OBS Virtual Cam. Select "OBS Virtual Camera" as your webcam in any video call app. |
-| **WebSocket** | External rendering | Broadcasts raw coordinate data as JSON over `ws://localhost:8765` for consumption by 3D engines or custom frontends. |
+| **TV App Stream** (`websocket`) | LG webOS TV | Streams raw OpenCV JPEGs (cropped) via Port 8765 and receives VAD-buffered audio via Port 8766 from the Web App. |
 
 ---
 
-## 🗺️ Roadmap
+## 🗺️ Roadmap & History
 
+### Phase 1: Core Engine & Desktop Integrations (Completed)
 - [x] Multi-threaded queue-based pipeline architecture
 - [x] Windows WASAPI loopback audio capture (system audio)
 - [x] Dual microphone + loopback capture with Voice Lock
@@ -356,11 +372,19 @@ All settings are managed through `config/app_settings.json`:
 - [x] Catmull-Rom spline rendering with glow effects
 - [x] OBS Virtual Camera output for video calls
 - [x] CustomTkinter GUI dashboard
-- [x] Missing frame imputation (tracking drop recovery)
+
+### Phase 2: Web & Smart TV Integrations (Current)
+- [x] WebSocket Audio Receiver for remote stream ingestion
+- [x] Smart VAD (Voice Activity Detection) Buffering over WebSockets
+- [x] LG webOS TV App Proof-of-Concept
+- [x] Cropped streaming optimizations for low latency JPEGs
+- [x] Draggable/Resizable TV Overlay
+- [x] Real-time TV playback speed controls (0.25x - 1.0x)
+
+### Future Roadmap
 - [ ] Scale S3 dictionary to 10,000+ words
-- [ ] Fine-tuned STT model for lower word-error-rate
+- [ ] Deepgram Streaming WebSockets for instant STT (millisecond latency)
 - [ ] 3D VRM avatar rendering (Godot / Three.js)
-- [ ] Browser extension for in-page overlay
 - [ ] Fingerspelling fallback for out-of-dictionary words
 
 ---
