@@ -1,6 +1,6 @@
 {
   "_comment_intro": "Main configuration file. Standard JSON doesn't support comments, so we use _comment fields as notes.",
-  "input_mode": "dual_audio",
+  "input_mode": "websocket_audio",
   "_comment_input_mode": "Choose your primary input method. Options: 'typing', 'audio_loopback', 'dual_audio', OR 'websocket_audio'.",
   "output_mode": "opencv",
   "_comment_output_mode": "Choose your rendering destination. Options: 'opencv' (local window), 'virtual_cam' (OBS Camera for Zoom), OR 'electron' (Hologram UI).",
@@ -22,7 +22,7 @@
   },
   "_comment_audio": "Audio capture settings. Adjust silence_timeout_sec to change how aggressively speech is chunked into phrases.",
   "playback": {
-    "speed_ms": 10,
+    "speed_ms": 0,
     "transition_frames": 1,
     "interpolation_frames": 0
   },
@@ -55,5 +55,8 @@
       0
     ]
   },
-  "_comment_colors": "RGB color values for the drawn points. (f=Face, p=Pose, l=Left Hand, r=Right Hand)."
+  "_comment_colors": "RGB color values for the drawn points. (f=Face, p=Pose, l=Left Hand, r=Right Hand).",
+  "tv_app": {
+    "video_source": "https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8"
+  }
 }

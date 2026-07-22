@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signify - LG webOS TV App</title>
     <link rel="icon" href="icon.png">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
@@ -19,6 +20,15 @@
                 </div>
             </div>
             <div class="badges-container">
+                <!-- Channel Selector Toggle -->
+                <div class="control-group">
+                    <label for="videoSourceSelect" style="font-size: 14px; font-weight: 500; margin-right: 8px;">Source:</label>
+                    <select id="videoSourceSelect" class="speed-select" style="margin-right: 15px;">
+                        <option value="https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8">Live Channel (CBS News)</option>
+                        <option value="motivation.mp4">Custom Video (Motivation)</option>
+                    </select>
+                </div>
+
                 <!-- WebSocket Status Badge -->
                 <div class="badge-item">
                     <span class="badge-label">WS Connection:</span>
@@ -41,7 +51,7 @@
         <!-- Main Workspace: Video + Floating Avatar -->
         <main class="tv-main">
             <div class="video-container">
-                <video id="broadcastVideo" class="tv-video-player" src="motivation.mp4" playsinline></video>
+                <video id="broadcastVideo" class="tv-video-player" playsinline></video>
                 
                 <!-- Video Overlay Title -->
                 <div class="video-title-overlay">
@@ -94,6 +104,6 @@
             </div>
         </footer>
     </div>
-    <script src="app.js?v=3"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>

@@ -5,6 +5,7 @@ let processorNode = null;
 let isStreaming = false;
 let websocket = null;
 let videoWebsocket = null;
+let hlsInstance = null;
 
 // DOM Elements
 const startBtn = document.getElementById('startBtn');
@@ -303,6 +304,71 @@ if (playbackSpeed) {
     });
     // Set initial
     video.playbackRate = parseFloat(playbackSpeed.value);
+}
+
+// --- Dynamic Config Loading ---
+function loadVideoSource(url) {
+    if (hlsInstance) {
+        hlsInstance.destroy();
+        hlsInstance = null;
+    }
+
+    if (url.includes('.m3u8')) {
+        if (Hls.isSupported()) {
+            hlsInstance = new Hls();
+            hlsInstance.loadSource(url);
+            hlsInstance.attachMedia(video);
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = url;
+            video.load();
+        }
+    } else {
+        video.src = url;
+        video.load();
+    }
+}
+
+// Fetch the main configuration file from the parent directory
+fetch('../../config/app_settings.json')
+    .then(response => {
+        if (!response.ok) {
+            console.error("Could not load config. Are you running the server from the root Signify folder?");
+            loadVideoSource('motivation.mp4'); // Fallback
+            throw new Error("HTTP Status " + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.tv_app && data.tv_app.video_source) {
+            console.log("Loaded TV App Config, Video Source:", data.tv_app.video_source);
+            loadVideoSource(data.tv_app.video_source);
+            if (document.getElementById('videoSourceSelect')) {
+                document.getElementById('videoSourceSelect').value = data.tv_app.video_source;
+            }
+        } else {
+            loadVideoSource('motivation.mp4');
+            if (document.getElementById('videoSourceSelect')) {
+                document.getElementById('videoSourceSelect').value = 'motivation.mp4';
+            }
+        }
+    })
+    .catch(err => {
+        console.error("Failed to fetch app_settings.json:", err);
+        loadVideoSource('motivation.mp4');
+    });
+
+// --- Video Source Toggle UI ---
+const videoSourceSelect = document.getElementById('videoSourceSelect');
+if (videoSourceSelect) {
+    videoSourceSelect.addEventListener('change', (e) => {
+        // Stop current broadcast if running
+        if (isStreaming) {
+            stopBroadcast();
+        }
+        // Load the new video source
+        console.log("Switching source to:", e.target.value);
+        loadVideoSource(e.target.value);
+    });
 }
 
 // --- Avatar Box Drag Logic ---
