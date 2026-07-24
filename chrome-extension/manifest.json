@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Signify Avatar Extension",
+  "version": "1.0.0",
+  "description": "3D Sign Language Avatar overlay for specific sites.",
+  "action": {
+    "default_title": "Toggle Signify",
+    "default_icon": "icon.png"
+  },
+  "icons": {
+    "128": "icon.png"
+  },
+  "background": {
+    "service_worker": "src/background.ts"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.cbsnews.com/*",
+        "*://*.twitch.tv/*"
+      ],
+      "js": ["src/content.tsx"]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabCapture",
+    "scripting",
+    "offscreen"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.cbsnews.com/*",
+    "*://*.twitch.tv/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "offscreen.html",
+        "offscreen.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

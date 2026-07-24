@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #f59e0b; /* amber-500 from the avatar SVG */
+  --color-foreground: #ffffff;
+  --color-card: #1f2937; /* gray-800 */
+}
+
+/* Reset for shadow DOM if needed */
+:host {
+  all: initial;
+}

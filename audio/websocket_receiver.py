@@ -55,6 +55,7 @@ class WebSocketAudioReceiver:
                 if isinstance(message, bytes):
                     audio_data_np = np.frombuffer(message, dtype=np.int16)
                     rms = np.sqrt(np.mean(np.square(audio_data_np.astype(np.float32)))) if len(audio_data_np) > 0 else 0
+                    logger.debug(f"Received audio chunk, len: {len(message)}, rms: {rms}")
                     
                     if rms > self.silence_threshold:
                         is_recording = True
