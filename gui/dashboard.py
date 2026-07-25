@@ -6,6 +6,7 @@ import threading
 import ctypes
 import customtkinter as ctk
 from PIL import Image
+import webbrowser
 
 # Fix taskbar icon on Windows
 try:
@@ -26,7 +27,8 @@ LOGO_PATH = os.path.join(BASE_DIR, "gui", "assets", "logo.png")
 INPUT_MAP = {
     "Text Typing": "typing",
     "System Audio (Loopback)": "audio_loopback",
-    "Microphone & System Audio": "dual_audio"
+    "Microphone & System Audio": "dual_audio",
+    "Web/Extension Audio": "websocket_audio"
 }
 INPUT_MAP_REV = {v: k for k, v in INPUT_MAP.items()}
 
@@ -46,6 +48,8 @@ class SignifyDashboard(ctk.CTk):
         
         self.config_data = self.load_config()
         self.pipeline_process = None
+        self.chrome_ext_process = None
+        self.website_process = None
 
         self.setup_icon()
         self.setup_background()
@@ -88,7 +92,8 @@ class SignifyDashboard(ctk.CTk):
                 "input_mode": "typing",
                 "output_mode": "opencv",
                 "network": {"enable_websocket": False},
-                "playback": {"speed_ms": 33, "transition_frames": 5, "interpolation_frames": 4}
+                "playback": {"speed_ms": 33, "transition_frames": 5, "interpolation_frames": 4},
+                "launch": {"core": True, "chrome_ext": False, "website": False}
             }
 
     def save_config(self):
@@ -195,9 +200,40 @@ class SignifyDashboard(ctk.CTk):
         self.scale_slider = ctk.CTkSlider(self.right_frame, from_=0.1, to=1.0, variable=self.scale_var, command=self.update_scale_label)
         self.scale_slider.pack(fill="x", padx=20, pady=5)
 
+        # ---- LAUNCH SETTINGS ----
+        self.launch_frame = ctk.CTkFrame(self, fg_color=frame_color)
+        self.launch_frame.grid(row=2, column=0, columnspan=2, padx=30, pady=10, sticky="nsew")
+        
+        ctk.CTkLabel(self.launch_frame, text="Launch Settings", font=ctk.CTkFont(weight="bold")).grid(row=0, column=0, columnspan=3, pady=(10, 5))
+        
+        self.launch_core_var = ctk.BooleanVar(value=self.config_data.get("launch", {}).get("core", True))
+        self.launch_chrome_var = ctk.BooleanVar(value=self.config_data.get("launch", {}).get("chrome_ext", False))
+        self.launch_website_var = ctk.BooleanVar(value=self.config_data.get("launch", {}).get("website", False))
+
+        # Core
+        ctk.CTkSwitch(self.launch_frame, text="Signify Core (main.py)", variable=self.launch_core_var, command=self.update_config).grid(row=1, column=0, padx=20, pady=5, sticky="w")
+        self.core_status_label = ctk.CTkLabel(self.launch_frame, text="Stopped", text_color="gray")
+        self.core_status_label.grid(row=1, column=1, padx=20, pady=5, sticky="w")
+        
+        # Chrome Ext
+        ctk.CTkSwitch(self.launch_frame, text="Chrome Extension", variable=self.launch_chrome_var, command=self.update_config).grid(row=2, column=0, padx=20, pady=5, sticky="w")
+        self.chrome_status_label = ctk.CTkLabel(self.launch_frame, text="Stopped", text_color="gray")
+        self.chrome_status_label.grid(row=2, column=1, padx=20, pady=5, sticky="w")
+
+        # LG TV App
+        ctk.CTkSwitch(self.launch_frame, text="LG TV App Server", variable=self.launch_website_var, command=self.update_config).grid(row=3, column=0, padx=20, pady=(5, 15), sticky="w")
+        self.website_status_label = ctk.CTkLabel(self.launch_frame, text="Stopped", text_color="gray")
+        self.website_status_label.grid(row=3, column=1, padx=20, pady=(5, 15), sticky="w")
+        self.website_url_btn = ctk.CTkButton(self.launch_frame, text="Open UI", width=60, height=24, command=lambda: webbrowser.open("http://localhost:8080"), state="disabled")
+        self.website_url_btn.grid(row=3, column=2, padx=10, pady=(5, 15), sticky="w")
+
+        self.launch_frame.grid_columnconfigure(0, weight=1)
+        self.launch_frame.grid_columnconfigure(1, weight=1)
+        self.launch_frame.grid_columnconfigure(2, weight=1)
+
         # ---- BOTTOM PANEL (Launch Control) ----
         self.bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.bottom_frame.grid(row=2, column=0, columnspan=2, pady=(15, 5))
+        self.bottom_frame.grid(row=3, column=0, columnspan=2, pady=(15, 5))
 
         self.status_label = ctk.CTkLabel(self.bottom_frame, text="Status: Ready", text_color="gray")
         self.status_label.pack(pady=(0, 5))
@@ -207,7 +243,7 @@ class SignifyDashboard(ctk.CTk):
 
         self.start_button = ctk.CTkButton(
             self.button_frame, 
-            text="START SIGNIFY", 
+            text="START SELECTED", 
             font=ctk.CTkFont(size=18, weight="bold"),
             height=50,
             width=200,
@@ -232,7 +268,7 @@ class SignifyDashboard(ctk.CTk):
 
         # ---- LIVE TYPING PANEL ----
         self.typing_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.typing_frame.grid(row=3, column=0, columnspan=2, pady=(5, 5), padx=30, sticky="ew")
+        self.typing_frame.grid(row=4, column=0, columnspan=2, pady=(5, 5), padx=30, sticky="ew")
 
         self.typing_entry = ctk.CTkEntry(
             self.typing_frame, 
@@ -251,7 +287,7 @@ class SignifyDashboard(ctk.CTk):
 
         # ---- LIVE FEEDBACK / TRANSLATION PANEL ----
         self.feedback_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.feedback_frame.grid(row=4, column=0, columnspan=2, pady=(0, 10), padx=30, sticky="ew")
+        self.feedback_frame.grid(row=5, column=0, columnspan=2, pady=(0, 10), padx=30, sticky="ew")
 
         self.translation_label = ctk.CTkLabel(
             self.feedback_frame, 
@@ -305,48 +341,103 @@ class SignifyDashboard(ctk.CTk):
         self.config_data["playback"]["transition_frames"] = int(self.trans_var.get())
         self.config_data["playback"]["interpolation_frames"] = int(self.interp_var.get())
 
+        if "launch" not in self.config_data:
+            self.config_data["launch"] = {}
+        self.config_data["launch"]["core"] = self.launch_core_var.get()
+        self.config_data["launch"]["chrome_ext"] = self.launch_chrome_var.get()
+        self.config_data["launch"]["website"] = self.launch_website_var.get()
+
         # Save to disk
         self.save_config()
 
     def toggle_signify(self):
-        if self.pipeline_process is None or self.pipeline_process.poll() is not None:
+        # Check if any process is running
+        any_running = False
+        if self.pipeline_process and self.pipeline_process.poll() is None: any_running = True
+        if self.chrome_ext_process and self.chrome_ext_process.poll() is None: any_running = True
+        if self.website_process and self.website_process.poll() is None: any_running = True
+
+        if not any_running:
             # Clear previous text
             self.translation_label.configure(text="Waiting for translation...", text_color="gray")
             self.warning_label.configure(text="")
 
-            # Start Process
-            main_script = os.path.join(BASE_DIR, "main.py")
+            # Start Core
+            if self.launch_core_var.get():
+                main_script = os.path.join(BASE_DIR, "main.py")
+                self.pipeline_process = subprocess.Popen(
+                    [sys.executable, main_script], 
+                    stdin=subprocess.PIPE, 
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1, # Line buffered
+                    universal_newlines=True
+                )
+                threading.Thread(target=self.output_listener, daemon=True).start()
+                self.core_status_label.configure(text="Running", text_color="#10B981")
             
-            # Pipe stdin/stdout to interact with main.py
-            self.pipeline_process = subprocess.Popen(
-                [sys.executable, main_script], 
-                stdin=subprocess.PIPE, 
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1, # Line buffered
-                universal_newlines=True
-            )
+            # Start Chrome Extension
+            if self.launch_chrome_var.get():
+                ext_dir = os.path.join(BASE_DIR, "chrome-extension")
+                self.chrome_ext_process = subprocess.Popen(
+                    "npm run dev", 
+                    cwd=ext_dir,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace"
+                )
+                threading.Thread(target=self.node_output_listener, args=(self.chrome_ext_process, "Chrome Ext"), daemon=True).start()
+                self.chrome_status_label.configure(text="Running", text_color="#10B981")
 
-            # Start background thread to read logs
-            threading.Thread(target=self.output_listener, daemon=True).start()
+            # Start LG TV App Server
+            if self.launch_website_var.get():
+                web_dir = os.path.join(BASE_DIR, "website", "lg_tv_app")
+                self.website_process = subprocess.Popen(
+                    [sys.executable, "-m", "http.server", "8080"], 
+                    cwd=web_dir,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace"
+                )
+                threading.Thread(target=self.node_output_listener, args=(self.website_process, "LG TV App"), daemon=True).start()
+                self.website_status_label.configure(text="Running", text_color="#10B981")
+                self.website_url_btn.configure(state="normal")
             
-            self.start_button.configure(text="STOP SIGNIFY", fg_color="#EF4444", hover_color="#DC2626") # Red
+            self.start_button.configure(text="STOP SELECTED", fg_color="#EF4444", hover_color="#DC2626") # Red
             self.status_label.configure(text="Status: Running", text_color="#10B981")
 
-            # Enable typing if mode is typing
-            if self.config_data.get("input_mode") == "typing":
+            # Enable typing if mode is typing and core is running
+            if self.config_data.get("input_mode") == "typing" and self.launch_core_var.get():
                 self.typing_entry.configure(state="normal")
                 self.send_button.configure(state="normal")
             
             # Enable clear button
             self.clear_button.configure(state="normal")
         else:
-            # Stop Process
-            self.pipeline_process.terminate()
-            self.pipeline_process = None
+            # Stop Processes
+            if self.pipeline_process:
+                self.pipeline_process.terminate()
+                self.pipeline_process = None
+                self.core_status_label.configure(text="Stopped", text_color="gray")
             
-            self.start_button.configure(text="START SIGNIFY", fg_color="#10B981", hover_color="#059669")
+            if self.chrome_ext_process:
+                subprocess.run(f"taskkill /F /T /PID {self.chrome_ext_process.pid}", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                self.chrome_ext_process = None
+                self.chrome_status_label.configure(text="Stopped", text_color="gray")
+
+            if self.website_process:
+                self.website_process.terminate()
+                self.website_process = None
+                self.website_status_label.configure(text="Stopped", text_color="gray")
+                self.website_url_btn.configure(state="disabled")
+            
+            self.start_button.configure(text="START SELECTED", fg_color="#10B981", hover_color="#059669")
             self.status_label.configure(text="Status: Stopped", text_color="gray")
 
             # Disable typing and clear
@@ -396,6 +487,16 @@ class SignifyDashboard(ctk.CTk):
                 
         except Exception as e:
             print(f"Subprocess output listener closed: {e}")
+
+    def node_output_listener(self, process, name):
+        """Reads stdout from node processes and prints to terminal."""
+        if not process: return
+        try:
+            for line in iter(process.stdout.readline, ''):
+                line = line.strip()
+                if line: print(f"[{name}] {line}")
+        except Exception as e:
+            print(f"[{name}] Listener closed: {e}")
 
     def send_text(self, event=None):
         if self.pipeline_process and self.pipeline_process.poll() is None:

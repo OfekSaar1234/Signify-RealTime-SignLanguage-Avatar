@@ -58,5 +58,10 @@
   "_comment_colors": "RGB color values for the drawn points. (f=Face, p=Pose, l=Left Hand, r=Right Hand).",
   "tv_app": {
     "video_source": "https://cbsn-us.cbsnstream.cbsnews.com/out/v1/55a8648e8f134e82a470f83d562deeca/master.m3u8"
+  },
+  "launch": {
+    "core": true,
+    "chrome_ext": true,
+    "website": false
   }
 }
