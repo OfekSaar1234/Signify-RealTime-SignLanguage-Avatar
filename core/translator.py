@@ -5,6 +5,42 @@ import queue
 import threading
 from utils.logger import logger
 
+def simple_lemmatize(word):
+    # Dictionary of explicit irregular verbs or specific mappings
+    irregular = {
+        "spoke": "speak",
+        "wanted": "want",
+        "designed": "design",
+        "communicating": "communication",
+        "app": "application",
+        "saw": "see",
+        "went": "go",
+        "ate": "eat",
+        "drank": "drink",
+        "slept": "sleep",
+        "bought": "buy",
+        "sold": "sell",
+        "paid": "pay",
+        "thought": "think",
+        "made": "make"
+    }
+    if word in irregular:
+        return irregular[word]
+        
+    # Simple rule-based stripping for common regular verbs
+    if len(word) > 4:
+        if word.endswith("ing"):
+            return word[:-3]
+        if word.endswith("ed"):
+            if word[-3] in ['t', 'd']:
+                return word[:-2] # wanted -> want
+            else:
+                return word[:-1] # designed -> design
+        if word.endswith("s") and not word.endswith("ss"):
+            return word[:-1]
+            
+    return word
+
 class ASLTranslator:
     """
     Consumes English text from a queue, translates it into an ASL gloss sequence,
@@ -53,6 +89,10 @@ class ASLTranslator:
         for word in words:
             if word in self.stop_words:
                 continue
+                
+            # Safely lemmatize the word to base form
+            word = simple_lemmatize(word)
+            
             upper_word = word.upper()
             if word in self.time_words:
                 time_glosses.append(upper_word)

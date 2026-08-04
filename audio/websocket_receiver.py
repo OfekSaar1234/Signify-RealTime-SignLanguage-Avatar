@@ -44,7 +44,7 @@ class WebSocketAudioReceiver:
         silence_chunks = 0
         
         # Max lengths based on 85ms chunks (4096 samples at 16000Hz)
-        max_silence_chunks = 3   # ~0.25 seconds of silence (faster triggering)
+        max_silence_chunks = 8   # ~0.7 seconds of silence to naturally end a sentence
         max_recording_chunks = 23 # ~2.0 seconds maximum recording
         
         try:

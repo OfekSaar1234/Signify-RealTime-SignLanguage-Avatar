@@ -362,12 +362,21 @@ const videoSourceSelect = document.getElementById('videoSourceSelect');
 if (videoSourceSelect) {
     videoSourceSelect.addEventListener('change', (e) => {
         // Stop current broadcast if running
-        if (isStreaming) {
+        const wasStreaming = isStreaming;
+        if (wasStreaming) {
             stopBroadcast();
         }
+        
         // Load the new video source
         console.log("Switching source to:", e.target.value);
         loadVideoSource(e.target.value);
+        
+        // Auto-restart if they were already watching
+        if (wasStreaming) {
+            setTimeout(() => {
+                startBroadcast();
+            }, 500);
+        }
     });
 }
 
@@ -418,4 +427,22 @@ function drag(e) {
         avatarBox.style.left = `${currentX}px`;
         avatarBox.style.top = `${currentY}px`;
     }
+}
+
+// --- Fullscreen Logic ---
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const videoContainer = document.querySelector('.video-container');
+
+if (fullscreenBtn && videoContainer) {
+    fullscreenBtn.addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+            videoContainer.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    });
 }

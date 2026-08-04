@@ -16,7 +16,7 @@
   "_comment_display": "Settings for rendering the Avatar canvas.",
   "audio": {
     "chunk_size": 4096,
-    "silence_threshold_rms": 500,
+    "silence_threshold_rms": 30,
     "silence_timeout_sec": 0.7,
     "max_recording_sec": 2.0
   },
@@ -62,6 +62,6 @@
   "launch": {
     "core": true,
     "chrome_ext": true,
-    "website": false
+    "website": true
   }
 }
