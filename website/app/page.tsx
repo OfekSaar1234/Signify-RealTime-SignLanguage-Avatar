@@ -1,6 +1,8 @@
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
 import { VideoShowcase } from "@/components/video-showcase"
+import { ChromeExtensionSection } from "@/components/chrome-extension-section"
+import { SmartTvSection } from "@/components/smart-tv-section"
 import { HowItWorks } from "@/components/how-it-works"
 import { InstallationSection } from "@/components/installation-section"
 import { DataPreview } from "@/components/data-preview"
@@ -14,6 +16,8 @@ export default function Page() {
       <main>
         <HeroSection />
         <VideoShowcase />
+        <ChromeExtensionSection />
+        <SmartTvSection />
         <HowItWorks />
         <InstallationSection />
         <DataPreview />

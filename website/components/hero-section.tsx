@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Download, ArrowRight, Github } from "lucide-react"
+import { Download, ArrowRight, Github, Twitch, Youtube, Chrome, Tv, Video } from "lucide-react"
 
 const expoEase = [0.16, 1, 0.3, 1] as const
 
@@ -34,18 +34,40 @@ export function HeroSection() {
               transition={{ duration: 1.2, delay: 0.1, ease: expoEase }}
               className="text-fluid-1 text-balance text-foreground mb-6"
             >
-              Every meeting, <br className="hidden md:block" />
-              now accessible in <span className="text-primary italic pr-2">real-time.</span>
+              now accessible <span className="text-primary italic pr-2">everywhere.</span>
             </motion.h1>
 
             <motion.p
               initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.2, delay: 0.2, ease: expoEase }}
-              className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-12 leading-relaxed"
+              className="text-lg sm:text-xl text-muted-foreground max-w-2xl mb-8 leading-relaxed"
             >
-              Signify captures system audio and broadcasts a highly responsive 3D signing avatar directly into Zoom or any conferencing software, empowering the deaf and hard of hearing community.
+              Signify captures audio and broadcasts a highly responsive 3D signing avatar directly into Zoom, YouTube, Twitch streams, and Live TV—empowering the deaf and hard of hearing community across all platforms.
             </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.25, ease: expoEase }}
+              className="flex items-center gap-4 mb-12 text-muted-foreground"
+            >
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm">
+                <Video size={16} /> <span className="hidden sm:inline">Zoom</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm">
+                <Chrome size={16} /> <span className="hidden sm:inline">Chrome</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm">
+                <Youtube size={16} /> <span className="hidden sm:inline">YouTube</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm">
+                <Twitch size={16} /> <span className="hidden sm:inline">Twitch</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/50 text-sm">
+                <Tv size={16} /> <span className="hidden sm:inline">Smart TV</span>
+              </div>
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 40 }}
@@ -82,22 +104,13 @@ export function HeroSection() {
               initial={{ opacity: 0, scale: 0.9, filter: "blur(20px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 1.5, delay: 0.4, ease: expoEase }}
-              className="relative w-full h-full rounded-[2.5rem] bg-secondary/30 subtle-border overflow-hidden flex items-center justify-center"
+              className="relative w-full h-full rounded-[2.5rem] bg-secondary/30 subtle-border overflow-hidden flex items-center justify-center shadow-2xl"
             >
-              {/* Abstract structural grid for the avatar area */}
-              <div className="absolute inset-0 opacity-10" 
-                style={{ backgroundImage: "radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)", backgroundSize: "32px 32px" }}
+              <img 
+                src="/images/ZOOM.png" 
+                alt="Signify Zoom Meeting Integration" 
+                className="absolute inset-0 w-full h-full object-cover" 
               />
-              
-              <div className="relative text-center px-6">
-                <div className="w-24 h-24 mx-auto mb-6 rounded-full border border-primary/30 flex items-center justify-center animate-[spin_10s_linear_infinite]">
-                  <div className="w-16 h-16 rounded-full border border-primary border-t-transparent animate-[spin_3s_linear_infinite_reverse]" />
-                </div>
-                <h3 className="font-display font-medium text-xl text-foreground mb-2">Sign Avatar Stream</h3>
-                <p className="text-muted-foreground text-sm max-w-xs mx-auto">
-                  Rendering 3D model with real-time WASAPI audio interception
-                </p>
-              </div>
             </motion.div>
           </div>
           
