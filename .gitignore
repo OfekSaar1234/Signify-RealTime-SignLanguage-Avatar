@@ -8,7 +8,6 @@ logs/
 *.pem
 
 # Local Data Storage
-assets/jsons/
 *.mp4
 
 # Environment Variables
