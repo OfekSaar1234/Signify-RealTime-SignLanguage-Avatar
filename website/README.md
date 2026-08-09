@@ -1,8 +1,7 @@
 # Signify Landing Page
 
-## Live Deployments
-- 🌐 **S3 Static Website (Recommended):** [http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com](http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com)
-- ☁️ **AWS Amplify App (Currently Unstyled):** [https://main.d1uub175v5wr23.amplifyapp.com](https://main.d1uub175v5wr23.amplifyapp.com) *(needs GitHub connection to resolve Next.js asset paths)*
+## Live Deployment
+- 🌐 **S3 Static Website:** [http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com](http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com)
 
 ---
 
