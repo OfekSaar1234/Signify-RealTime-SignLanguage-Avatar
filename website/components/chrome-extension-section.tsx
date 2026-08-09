@@ -110,16 +110,25 @@ export function ChromeExtensionSection() {
               </div>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="mt-8">
+            <motion.div variants={fadeUp} className="mt-8 flex flex-col items-start gap-4">
               <a 
-                href="https://github.com/OfekSaar1234/Signify-RealTime-SignLanguage-Avatar/tree/main/chrome-extension"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/signify-extension.zip"
+                download="signify-extension.zip"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors"
               >
                 <Chrome size={18} />
-                Install Chrome Extension
+                Download Chrome Extension (.zip)
               </a>
+              
+              <div className="bg-secondary/20 border border-border/40 rounded-xl p-4 text-sm text-muted-foreground w-full max-w-md">
+                <h4 className="font-semibold text-foreground mb-2">How to install (Developer Mode):</h4>
+                <ol className="list-decimal list-inside space-y-1.5 ml-1">
+                  <li>Extract the downloaded <code className="text-xs bg-black/20 px-1 rounded">.zip</code> file.</li>
+                  <li>Go to <code className="text-xs bg-black/20 px-1 rounded select-all">chrome://extensions</code> in your browser.</li>
+                  <li>Enable <strong>Developer mode</strong> (toggle in top right).</li>
+                  <li>Click <strong>Load unpacked</strong> and select the extracted folder.</li>
+                </ol>
+              </div>
             </motion.div>
           </div>
         </motion.div>

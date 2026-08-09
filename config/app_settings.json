@@ -62,6 +62,6 @@
   "launch": {
     "core": true,
     "chrome_ext": true,
-    "website": true
+    "website": false
   }
 }

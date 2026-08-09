@@ -305,6 +305,29 @@ class SignifyDashboard(ctk.CTk):
         )
         self.warning_label.pack()
 
+        # ---- CHROME EXTENSION SIDELOAD PANEL ----
+        self.ext_frame = ctk.CTkFrame(self, fg_color=frame_color)
+        self.ext_frame.grid(row=6, column=0, columnspan=2, pady=(0, 10), padx=30, sticky="ew")
+
+        ctk.CTkLabel(self.ext_frame, text="Chrome Extension (Developer Mode Install)", font=ctk.CTkFont(weight="bold")).pack(pady=(10, 5))
+        instructions = (
+            "1. Click the button below to save the .zip file to your Desktop.\n"
+            "2. Extract the .zip file into a folder.\n"
+            "3. Open Chrome and navigate to chrome://extensions\n"
+            "4. Turn on 'Developer mode' in the top right corner.\n"
+            "5. Click 'Load unpacked' and select the extracted folder."
+        )
+        ctk.CTkLabel(self.ext_frame, text=instructions, justify="left", font=ctk.CTkFont(size=12)).pack(padx=20, pady=5)
+        
+        self.ext_btn_frame = ctk.CTkFrame(self.ext_frame, fg_color="transparent")
+        self.ext_btn_frame.pack(pady=10)
+        
+        self.copy_zip_btn = ctk.CTkButton(self.ext_btn_frame, text="Save .zip to Desktop", command=self.export_extension_zip)
+        self.copy_zip_btn.pack(side="left", padx=10)
+        
+        self.ext_status_label = ctk.CTkLabel(self.ext_btn_frame, text="", font=ctk.CTkFont(size=12))
+        self.ext_status_label.pack(side="left", padx=10)
+
     # Dynamic label updates
     def update_speed_label(self, val):
         self.speed_val_label.configure(text=f"Speed (Delay ms): {int(val)}")
@@ -508,6 +531,19 @@ class SignifyDashboard(ctk.CTk):
                     self.typing_entry.delete(0, 'end')
                 except Exception as e:
                     print(f"Failed to send text: {e}")
+
+    def export_extension_zip(self):
+        import shutil
+        src_zip = os.path.join(BASE_DIR, "chrome-extension", "signify-extension.zip")
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop", "signify-extension.zip")
+        try:
+            if not os.path.exists(src_zip):
+                self.ext_status_label.configure(text="Error: ZIP not found. Please build extension first.", text_color="#EF4444")
+                return
+            shutil.copy2(src_zip, desktop)
+            self.ext_status_label.configure(text="Saved to Desktop!", text_color="#10B981")
+        except Exception as e:
+            self.ext_status_label.configure(text=f"Error: {e}", text_color="#EF4444")
 
 if __name__ == "__main__":
     app = SignifyDashboard()
