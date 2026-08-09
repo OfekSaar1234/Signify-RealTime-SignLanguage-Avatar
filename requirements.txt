@@ -10,3 +10,4 @@ customtkinter
 pillow
 boto3
 keyboard
+python-dotenv
