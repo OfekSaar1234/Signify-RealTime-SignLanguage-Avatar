@@ -76,7 +76,8 @@ export function HeroSection() {
               className="flex flex-col sm:flex-row items-center gap-6 w-full sm:w-auto"
             >
               <motion.a
-                href="#download"
+                href="/Signify.exe"
+                download="Signify.exe"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 className="w-full sm:w-auto flex items-center justify-center gap-3 bg-foreground text-background px-8 py-4 rounded-full text-lg font-bold tracking-wide transition-all hover:bg-foreground/90"

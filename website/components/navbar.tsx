@@ -78,7 +78,8 @@ export function Navbar() {
             </motion.a>
             
             <motion.a
-              href="#download"
+              href="/Signify.exe"
+              download="Signify.exe"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(var(--primary)_/_0.3)] hover:shadow-[0_0_30px_rgba(var(--primary)_/_0.5)]"
@@ -125,7 +126,8 @@ export function Navbar() {
                 GitHub
               </a>
               <a
-                href="#download"
+                href="/Signify.exe"
+                download="Signify.exe"
                 className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-4 rounded-full text-lg font-bold w-full mt-4"
               >
                 <Download size={20} />
