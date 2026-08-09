@@ -1,4 +1,10 @@
-# v0-design-brutalist-ai-saa-s
+# Signify Landing Page
+
+## Live Deployments
+- 🌐 **S3 Static Website (Recommended):** [http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com](http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com)
+- ☁️ **AWS Amplify App (Currently Unstyled):** [https://main.d1uub175v5wr23.amplifyapp.com](https://main.d1uub175v5wr23.amplifyapp.com) *(needs GitHub connection to resolve Next.js asset paths)*
+
+---
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 
