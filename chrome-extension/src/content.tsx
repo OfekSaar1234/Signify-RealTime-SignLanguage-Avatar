@@ -31,25 +31,20 @@ function ContentApp() {
       dragMomentum={false}
       initial={{ opacity: 0, y: 50 }}
       animate={{ opacity: 1, y: 0 }}
-      className="fixed bottom-4 right-4 z-[999999] bg-black rounded-xl shadow-2xl border border-gray-800 flex flex-col" 
-      style={{ width: '250px', height: '350px', cursor: 'grab', resize: 'both', overflow: 'hidden', minWidth: '150px', minHeight: '200px', maxWidth: '800px', maxHeight: '800px' }}
+      className="fixed bottom-4 right-4 z-[999999] rounded-xl shadow-2xl overflow-hidden" 
+      style={{ 
+        width: '250px', height: '350px', cursor: 'grab', resize: 'both', 
+        minWidth: '150px', minHeight: '200px', maxWidth: '800px', maxHeight: '800px',
+        backgroundColor: '#000000', boxSizing: 'border-box', border: '1px solid #1f2937'
+      }}
       whileTap={{ cursor: 'grabbing' }}
     >
-      <div className="bg-gray-900 px-3 py-2 flex items-center justify-between select-none">
-        <span className="text-white text-sm font-semibold flex items-center gap-2">
-          Signify {isCapturing && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
-        </span>
-        <div className="absolute top-2 right-2 bg-red-500/80 text-white text-xs px-2 py-1 rounded cursor-pointer pointer-events-auto" onClick={() => setIsVisible(false)}>
-          Close
+      {!isCapturing && (
+        <div className="absolute top-2 left-2 right-2 bg-yellow-500/90 text-white text-xs px-2 py-2 rounded text-center font-bold z-50 pointer-events-none">
+          Click extension icon to start hearing!
         </div>
-
-        {!isCapturing && (
-          <div className="absolute bottom-2 left-2 right-2 bg-yellow-500/90 text-white text-xs px-2 py-2 rounded text-center font-bold">
-            Click extension icon to start hearing!
-          </div>
-        )}
-      </div>
-      <div className="w-full h-full relative bg-black flex items-center justify-center pointer-events-none">
+      )}
+      <div className="w-full h-full relative flex items-center justify-center pointer-events-none" style={{ backgroundColor: '#000000' }}>
         <OpenCVAvatar className="w-full h-full relative" />
       </div>
     </motion.div>
