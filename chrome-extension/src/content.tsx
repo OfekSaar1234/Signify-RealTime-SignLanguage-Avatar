@@ -35,7 +35,8 @@ function ContentApp() {
       style={{ 
         width: '250px', height: '350px', cursor: 'grab', resize: 'both', 
         minWidth: '150px', minHeight: '200px', maxWidth: '800px', maxHeight: '800px',
-        backgroundColor: '#000000', boxSizing: 'border-box', border: '1px solid #1f2937'
+        backgroundColor: '#000000', boxSizing: 'border-box', border: '1px solid #1f2937',
+        pointerEvents: 'auto'
       }}
       whileTap={{ cursor: 'grabbing' }}
     >
@@ -62,7 +63,17 @@ container.style.width = '0';
 container.style.height = '0';
 container.style.zIndex = '999999';
 container.style.overflow = 'visible';
+container.style.pointerEvents = 'none'; // Prevent container from blocking
 document.body.appendChild(container);
+
+// Handle Fullscreen API (e.g. YouTube/CBS fullscreen buttons)
+document.addEventListener('fullscreenchange', () => {
+  if (document.fullscreenElement) {
+    document.fullscreenElement.appendChild(container);
+  } else {
+    document.body.appendChild(container);
+  }
+});
 
 const root = createRoot(container);
 root.render(
