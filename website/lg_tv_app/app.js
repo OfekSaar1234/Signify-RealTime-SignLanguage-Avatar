@@ -6,14 +6,18 @@ let isStreaming = false;
 let websocket = null;
 let videoWebsocket = null;
 let hlsInstance = null;
+let ghostHlsInstance = null;
 
 // DOM Elements
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const wsUrlInput = document.getElementById('wsUrlInput');
 const video = document.getElementById('broadcastVideo');
+const ghostVideo = document.getElementById('ghostVideo');
 const avatarBox = document.getElementById('avatarBox');
 const avatarStream = document.getElementById('avatarStream');
+const syncDelay = document.getElementById('syncDelay');
+const syncDelayVal = document.getElementById('syncDelayVal');
 
 // Initialize Web Audio API components
 function initAudio() {
@@ -23,8 +27,8 @@ function initAudio() {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     audioCtx = new AudioContextClass();
 
-    // Create MediaElementSource from news video
-    audioSource = audioCtx.createMediaElementSource(video);
+    // Create MediaElementSource from ghost video
+    audioSource = audioCtx.createMediaElementSource(ghostVideo);
 
     // Create ScriptProcessorNode (4096 samples, 1 input channel, 1 output channel)
     // 4096 at 48000Hz is ~85ms of audio latency, perfectly suited for real-time streaming
@@ -49,8 +53,8 @@ function initAudio() {
     };
 
     // Connect nodes
-    // 1. Connect video source to destination (so audio plays on TV speakers)
-    audioSource.connect(audioCtx.destination);
+    // 1. DO NOT connect ghost audio to speakers! (It must remain completely silent)
+    // audioSource.connect(audioCtx.destination);
 
     // 2. Connect video source to processor node for analysis/streaming
     audioSource.connect(processorNode);
@@ -172,10 +176,18 @@ function startBroadcast() {
     // Set streaming active state
     isStreaming = true;
 
-    // Start video playback
-    video.play().then(() => {
+    // Start video playback for both ghost and visible player
+    Promise.all([ghostVideo.play(), video.play()]).then(() => {
         if (playbackSpeed) {
-            video.playbackRate = parseFloat(playbackSpeed.value);
+            const speed = parseFloat(playbackSpeed.value);
+            video.playbackRate = speed;
+            ghostVideo.playbackRate = speed;
+        }
+        
+        // Apply sync delay
+        if (syncDelay) {
+            const delay = parseFloat(syncDelay.value);
+            video.currentTime = ghostVideo.currentTime - delay;
         }
     }).catch(err => {
         console.error("Video playback failed:", err);
@@ -252,6 +264,7 @@ function stopBroadcast() {
 
     // Pause video
     video.pause();
+    ghostVideo.pause();
 
     // Stop fallback oscillator if active
     if (window.fallbackOsc) {
@@ -300,10 +313,25 @@ console.log("Signify TV App initialized. Ready to broadcast.");
 const playbackSpeed = document.getElementById('playbackSpeed');
 if (playbackSpeed) {
     playbackSpeed.addEventListener('change', (e) => {
-        video.playbackRate = parseFloat(e.target.value);
+        const speed = parseFloat(e.target.value);
+        video.playbackRate = speed;
+        ghostVideo.playbackRate = speed;
     });
     // Set initial
-    video.playbackRate = parseFloat(playbackSpeed.value);
+    const initSpeed = parseFloat(playbackSpeed.value);
+    video.playbackRate = initSpeed;
+    ghostVideo.playbackRate = initSpeed;
+}
+
+// --- Sync Delay Control ---
+if (syncDelay) {
+    syncDelay.addEventListener('input', (e) => {
+        if (syncDelayVal) syncDelayVal.innerText = e.target.value;
+        if (isStreaming) {
+            const delay = parseFloat(e.target.value);
+            video.currentTime = ghostVideo.currentTime - delay;
+        }
+    });
 }
 
 // --- Dynamic Config Loading ---
@@ -312,19 +340,37 @@ function loadVideoSource(url) {
         hlsInstance.destroy();
         hlsInstance = null;
     }
+    if (ghostHlsInstance) {
+        ghostHlsInstance.destroy();
+        ghostHlsInstance = null;
+    }
 
     if (url.includes('.m3u8')) {
+        // Clear any hardcoded src before attaching HLS to prevent race conditions
+        video.removeAttribute('src');
+        video.load();
+        ghostVideo.removeAttribute('src');
+        ghostVideo.load();
+
         if (Hls.isSupported()) {
             hlsInstance = new Hls();
             hlsInstance.loadSource(url);
             hlsInstance.attachMedia(video);
+            
+            ghostHlsInstance = new Hls();
+            ghostHlsInstance.loadSource(url);
+            ghostHlsInstance.attachMedia(ghostVideo);
         } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
             video.src = url;
             video.load();
+            ghostVideo.src = url;
+            ghostVideo.load();
         }
     } else {
         video.src = url;
         video.load();
+        ghostVideo.src = url;
+        ghostVideo.load();
     }
 }
 

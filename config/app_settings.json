@@ -61,7 +61,7 @@
   },
   "launch": {
     "core": true,
-    "chrome_ext": true,
-    "website": false
+    "chrome_ext": false,
+    "website": true
   }
 }

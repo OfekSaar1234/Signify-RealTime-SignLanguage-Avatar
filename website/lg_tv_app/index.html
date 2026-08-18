@@ -51,6 +51,7 @@
         <!-- Main Workspace: Video + Floating Avatar -->
         <main class="tv-main">
             <div class="video-container">
+                <video id="ghostVideo" style="display:none;" playsinline></video>
                 <video id="broadcastVideo" class="tv-video-player" playsinline></video>
                 
                 <!-- Video Overlay Title -->
@@ -83,11 +84,16 @@
                 <div class="control-group playback-config" style="display: flex; flex-direction: column; gap: 8px; margin-right: auto; padding-left: 20px;">
                     <label for="playbackSpeed" style="font-size: 14px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px;">Speed</label>
                     <select id="playbackSpeed" style="background-color: #0c0c0e; border: 1px solid #27272a; border-radius: 8px; color: #fff; padding: 12px 18px; font-size: 16px; outline: none; cursor: pointer;">
-                        <option value="1.0">1x</option>
-                        <option value="0.75" selected>0.75x</option>
+                        <option value="1.0" selected>1x</option>
+                        <option value="0.75">0.75x</option>
                         <option value="0.5">0.5x</option>
                         <option value="0.25">0.25x</option>
                     </select>
+                </div>
+
+                <div class="control-group sync-config" style="display: flex; flex-direction: column; gap: 8px; margin-right: auto; padding-left: 20px;">
+                    <label for="syncDelay" style="font-size: 14px; font-weight: 700; color: #a1a1aa; text-transform: uppercase; letter-spacing: 0.5px;">Sync Delay (<span id="syncDelayVal">3</span>s)</label>
+                    <input type="range" id="syncDelay" min="0" max="15" step="1" value="3" style="width: 150px; cursor: pointer;">
                 </div>
 
                 <div class="control-group buttons">
@@ -107,6 +113,6 @@
             </div>
         </footer>
     </div>
-    <script src="app.js?v=6"></script>
+    <script src="app.js?v=8"></script>
 </body>
 </html>

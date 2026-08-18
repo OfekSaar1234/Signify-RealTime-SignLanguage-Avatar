@@ -32,7 +32,6 @@ WORDS = [
     "color", "red", "blue", "green", "yellow", "black", "white", "number", "one", "two",
     "three", "four", "five", "six", "seven", "eight", "nine", "ten", "money", "buy",
     "sell", "pay", "cost", "cheap", "expensive", "food", "water", "apple", "book", "car",
-    # Motivation Video Words
     "i", "dont", "know", "that", "dream", "is", "have", "care", "disappointing", 
     "it", "might", "been", "as", "working", "toward", "but", "are", "holding", 
     "in", "your", "mind", "its", "possible"
