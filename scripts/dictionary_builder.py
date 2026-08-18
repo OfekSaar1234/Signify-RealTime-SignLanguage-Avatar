@@ -226,6 +226,13 @@ if __name__ == "__main__":
             print(f"[PROCESSING] Extracting {30} key poses for: '{word}'...")
             # Passing 30 extracts enough keyframes to capture complex motion smoothly.
             tool.process_video_to_json(word, num_keyframes=30)
+            
+            # Delete the local MP4 after extracting the JSON
+            try:
+                os.remove(video_path)
+                print(f"[CLEANUP] Deleted {word}.mp4")
+            except Exception as e:
+                print(f"[WARNING] Could not delete {word}.mp4: {e}")
         else:
             print(f"[WARNING] Skipping '{word}': Could not find {video_path}")
             missing_mp4s.append(word)
