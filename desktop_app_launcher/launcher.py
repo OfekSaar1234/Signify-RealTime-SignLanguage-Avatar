@@ -69,10 +69,16 @@ def update_or_clone():
 
 from tkinter import simpledialog
 
-def check_env():
+def check_env(splash=None):
     env_path = os.path.join(REPO_DIR, ".env")
     if not os.path.exists(env_path):
+        if splash:
+            splash.withdraw()
         api_key = simpledialog.askstring("API Key Required", "Welcome!\n\nPlease enter your Deepgram API Key to continue:\n(This is required to run the real-time AI)")
+        if splash:
+            splash.deiconify()
+            splash.update()
+            
         if api_key:
             with open(env_path, "w") as f:
                 f.write(f"DEEPGRAM_API_KEY={api_key.strip()}\n")
@@ -89,9 +95,11 @@ def setup_venv_and_run(python_cmd):
     # Determine paths
     if sys.platform == "win32":
         venv_python = os.path.join(VENV_DIR, "Scripts", "python.exe")
+        venv_pythonw = os.path.join(VENV_DIR, "Scripts", "pythonw.exe")
         venv_pip = os.path.join(VENV_DIR, "Scripts", "pip.exe")
     else:
         venv_python = os.path.join(VENV_DIR, "bin", "python")
+        venv_pythonw = venv_python
         venv_pip = os.path.join(VENV_DIR, "bin", "pip")
         
     # Install requirements
@@ -111,19 +119,41 @@ def setup_venv_and_run(python_cmd):
     # Run dashboard
     dash_path = os.path.join(REPO_DIR, "run_dashboard.py")
     
-    startupinfo = None
-    if sys.platform == "win32":
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    
     # We use Popen so the launcher can exit and let the dashboard run
     try:
-        subprocess.Popen([venv_python, dash_path], cwd=REPO_DIR, startupinfo=startupinfo)
+        subprocess.Popen([venv_pythonw, dash_path], cwd=REPO_DIR)
     except Exception as e:
         show_error("Launch Failed", f"Failed to start the dashboard.\n\nError: {str(e)}")
 
 if __name__ == "__main__":
-    py_cmd = check_dependencies()
-    update_or_clone()
-    check_env()
-    setup_venv_and_run(py_cmd)
+    # Show splash screen
+    splash = tk.Toplevel(root)
+    splash.title("Signify")
+    splash.geometry("400x120")
+    
+    # Center the splash screen
+    splash.update_idletasks()
+    width = splash.winfo_width()
+    height = splash.winfo_height()
+    x = (splash.winfo_screenwidth() // 2) - (width // 2)
+    y = (splash.winfo_screenheight() // 2) - (height // 2)
+    splash.geometry(f"{width}x{height}+{x}+{y}")
+    
+    splash.overrideredirect(True) # Remove window borders
+    
+    # Add border and background to splash
+    frame = tk.Frame(splash, bg="#1E1E1E", highlightbackground="#3b82f6", highlightcolor="#3b82f6", highlightthickness=2)
+    frame.pack(fill="both", expand=True)
+    
+    tk.Label(frame, text="Signify", font=("Helvetica", 16, "bold"), bg="#1E1E1E", fg="#ffffff").pack(pady=(20, 5))
+    tk.Label(frame, text="Updating & Installing dependencies...\nThis may take a minute or two on first launch.", font=("Helvetica", 10), bg="#1E1E1E", fg="#a1a1aa").pack()
+    splash.update()
+
+    try:
+        py_cmd = check_dependencies()
+        update_or_clone()
+        check_env(splash)
+        setup_venv_and_run(py_cmd)
+    finally:
+        splash.destroy()
+        root.destroy()
