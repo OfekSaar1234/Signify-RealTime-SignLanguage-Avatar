@@ -56,16 +56,25 @@ def update_or_clone():
     if not os.path.exists(APP_DIR):
         os.makedirs(APP_DIR)
         
-    if os.path.exists(REPO_DIR) and os.path.exists(os.path.join(REPO_DIR, '.git')):
-        # Pull latest
-        success, out, err = run_cmd(["git", "pull"], cwd=REPO_DIR)
-        if not success:
-            show_error("Update Failed", f"Failed to pull latest updates from the server.\n\nError: {err}")
-    else:
-        # Clone
-        success, out, err = run_cmd(["git", "clone", "-b", "feature/lg-tv-poc-and-chrome-extension", REPO_URL], cwd=APP_DIR)
-        if not success:
-            show_error("Download Failed", f"Failed to download the application code.\n\nError: {err}")
+    if os.path.exists(REPO_DIR):
+        if os.path.exists(os.path.join(REPO_DIR, '.git')):
+            # Pull latest
+            success, out, err = run_cmd(["git", "pull"], cwd=REPO_DIR)
+            if not success:
+                show_error("Update Failed", f"Failed to pull latest updates from the server.\n\nError: {err}")
+            return
+        else:
+            # Corrupted directory, not a git repo. Remove it before cloning.
+            try:
+                shutil.rmtree(REPO_DIR)
+            except Exception as e:
+                show_error("Directory Error", f"Failed to clean up corrupted installation directory.\n\nError: {str(e)}")
+                return
+            
+    # Clone
+    success, out, err = run_cmd(["git", "clone", "-b", "feature/lg-tv-poc-and-chrome-extension", REPO_URL], cwd=APP_DIR)
+    if not success:
+        show_error("Download Failed", f"Failed to download the application code.\n\nError: {err}")
 
 from tkinter import simpledialog
 
@@ -121,7 +130,10 @@ def setup_venv_and_run(python_cmd):
     
     # We use Popen so the launcher can exit and let the dashboard run
     try:
-        subprocess.Popen([venv_pythonw, dash_path], cwd=REPO_DIR)
+        creationflags = 0
+        if sys.platform == "win32":
+            creationflags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+        subprocess.Popen([venv_pythonw, dash_path], cwd=REPO_DIR, creationflags=creationflags)
     except Exception as e:
         show_error("Launch Failed", f"Failed to start the dashboard.\n\nError: {str(e)}")
 
