@@ -1,0 +1,39 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: ["feature/lg-tv-poc-and-chrome-extension", "main", "master"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci || npm install
+
+      - name: Build Next.js
+        working-directory: website
+        run: npm run build
+
+      - name: Copy LG TV App to Output
+        run: cp -r website/lg_tv_app website/out/lg_tv_app
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: website/out
+          publish_branch: gh-pages

@@ -144,7 +144,7 @@ export function AboutSection() {
           </div>
 
           <Image
-            src="/images/about-isometric.jpg"
+            src="/Signify-RealTime-SignLanguage-Avatar/images/about-isometric.jpg"
             alt="Isometric view of AI infrastructure with server racks and data pipelines"
             fill
             className="object-cover"

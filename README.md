@@ -30,7 +30,7 @@ We focused heavily on **ultra-low latency** and **clever architecture**:
 ## 4. The Signify Ecosystem (What We Built)
 We didn't just build a local desktop script; we built a complete product ecosystem to ensure accessibility across all platforms:
 
-* **Landing Page**: We built a complete product website ([View Landing Page](http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com)). From here, users can seamlessly download the standalone Desktop App and the Chrome Extension.
+* **Landing Page**: We built a complete product website ([View Landing Page](https://OfekSaar1234.github.io/Signify-RealTime-SignLanguage-Avatar/)). From here, users can seamlessly download the standalone Desktop App and the Chrome Extension.
 * **Zoom & Video Conferencing**: Using OBS Virtual Camera integration (`output/virtual_cam.py`), our desktop app can act as a native webcam. Users can select "Signify" as their camera in Zoom, Teams, or Google Meet to project the ASL avatar directly into their meetings.
 * **Chrome Extension**: We developed a browser extension (`chrome-extension/`) that overlays the Signify avatar directly on top of streaming websites like YouTube and Twitch, providing real-time translation for web video.
 * **LG Smart TV App & Smart Delay**: We created a webOS TV application (`website/lg_tv_app/`) that receives the avatar broadcast over WebSockets. Because processing audio into sign language inherently takes a moment, we implemented a clever **delay / buffering mechanism** on the TV app. This allows the system to perfectly synchronize the on-screen ASL avatar with the broadcasted video, creating a seamless viewing experience without awkward mismatched timing.

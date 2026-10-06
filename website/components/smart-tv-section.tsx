@@ -69,7 +69,7 @@ export function SmartTvSection() {
               {/* TV Screenshot Container */}
               <div className="absolute inset-0 z-0 bg-black">
                 <img 
-                  src="/images/CBSNEWS.png" 
+                  src="/Signify-RealTime-SignLanguage-Avatar/images/CBSNEWS.png" 
                   alt="LG webOS TV App Interface"
                   className="absolute inset-0 w-full h-full object-contain" 
                 />

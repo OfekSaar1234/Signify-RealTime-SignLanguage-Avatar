@@ -82,7 +82,7 @@ export function VideoShowcase() {
             
             <video
               ref={videoRef}
-              src="/showcase-video.mp4"
+              src="/Signify-RealTime-SignLanguage-Avatar/showcase-video.mp4"
               className="w-full h-full object-cover opacity-90 transition-opacity duration-700"
               muted={isMuted}
               loop

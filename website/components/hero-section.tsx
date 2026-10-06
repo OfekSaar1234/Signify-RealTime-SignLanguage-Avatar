@@ -108,7 +108,7 @@ export function HeroSection() {
               className="relative w-full h-full rounded-[2.5rem] bg-secondary/30 subtle-border overflow-hidden flex items-center justify-center shadow-2xl"
             >
               <img 
-                src="/images/ZOOM.png" 
+                src="/Signify-RealTime-SignLanguage-Avatar/images/ZOOM.png" 
                 alt="Signify Zoom Meeting Integration" 
                 className="absolute inset-0 w-full h-full object-cover" 
               />

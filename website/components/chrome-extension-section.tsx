@@ -31,17 +31,17 @@ export function ChromeExtensionSection() {
               {/* Screenshots Container */}
               <div className="absolute inset-0 z-0 bg-black">
                 <img 
-                  src="/images/youtubeSpongbob.png" 
+                  src="/Signify-RealTime-SignLanguage-Avatar/images/youtubeSpongbob.png" 
                   alt="YouTube Extension Overlay"
                   className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${activeTab === "spongebob" ? "opacity-100 z-10" : "opacity-0 z-0"}`} 
                 />
                 <img 
-                  src="/images/kidsyoutube.png" 
+                  src="/Signify-RealTime-SignLanguage-Avatar/images/kidsyoutube.png" 
                   alt="Kids YouTube Extension Overlay"
                   className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${activeTab === "kids" ? "opacity-100 z-10" : "opacity-0 z-0"}`} 
                 />
                 <img 
-                  src="/images/twitchpng.png" 
+                  src="/Signify-RealTime-SignLanguage-Avatar/images/twitchpng.png" 
                   alt="Twitch Extension Overlay"
                   className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-500 ${activeTab === "twitch" ? "opacity-100 z-10" : "opacity-0 z-0"}`} 
                 />
@@ -112,7 +112,7 @@ export function ChromeExtensionSection() {
 
             <motion.div variants={fadeUp} className="mt-8 flex flex-col items-start gap-4">
               <a 
-                href="/signify-extension.zip"
+                href="/Signify-RealTime-SignLanguage-Avatar/signify-extension.zip"
                 download="signify-extension.zip"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-foreground text-background font-medium hover:bg-foreground/90 transition-colors"
               >

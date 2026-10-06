@@ -1,7 +1,7 @@
 # Signify Landing Page
 
 ## Live Deployment
-- 🌐 **S3 Static Website:** [http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com](http://signify-landing-page-12345.s3-website-us-east-1.amazonaws.com)
+- 🌐 **S3 Static Website:** [https://OfekSaar1234.github.io/Signify-RealTime-SignLanguage-Avatar/](https://OfekSaar1234.github.io/Signify-RealTime-SignLanguage-Avatar/)
 
 ---
 
