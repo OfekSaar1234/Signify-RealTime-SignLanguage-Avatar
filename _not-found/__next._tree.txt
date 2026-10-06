@@ -1,0 +1,2 @@
+:HL["/Signify-RealTime-SignLanguage-Avatar/_next/static/chunks/e8a99ab0ad8804dc.css","style"]
+0:{"buildId":"1yt7qcL6q6vtzKoJrOxKO","tree":{"name":"","paramType":null,"paramKey":"","hasRuntimePrefetch":false,"slots":{"children":{"name":"/_not-found","paramType":null,"paramKey":"/_not-found","hasRuntimePrefetch":false,"slots":{"children":{"name":"__PAGE__","paramType":null,"paramKey":"__PAGE__","hasRuntimePrefetch":false,"slots":null,"isRootLayout":false}},"isRootLayout":false}},"isRootLayout":true},"staleTime":300}
